@@ -1,0 +1,940 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.6">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="en"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="utf-8" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta name="viewport" content="width=device-width,initial-scale=1" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;Fleet / Customers / Insurance POC (V4 - Final)&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>:root{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>--bg:#0b1020; --text:#e7ecff; --muted:#aeb9e6; --line:rgba(231,236,255,.12);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>--good:#3ef0a8; --warn:#ffd166; --bad:#ff5c7a; --shadow: 0 10px 30px rgba(0,0,0,.35);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>--radius2:22px; --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>--sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>*{box-sizing:border-box}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>body{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin:0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: radial-gradient(1200px 800px at 15% 10%, rgba(106,228,255,.12), transparent 55%),</p>
+<p class="p1"><span class="Apple-converted-space">                  </span>radial-gradient(1200px 800px at 85% 15%, rgba(155,140,255,.12), transparent 55%),</p>
+<p class="p1"><span class="Apple-converted-space">                  </span>var(--bg);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color:var(--text); font-family:var(--sans);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.app{max-width: 1600px; margin:0 auto; padding: 22px 18px 50px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>header{display:flex; gap:14px; align-items:flex-start; justify-content:space-between; padding: 10px 4px 18px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.title h1{font-size:22px; margin:0 0 4px; letter-spacing:.2px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.title .sub{color:var(--muted); font-size:13px; line-height:1.4; max-width: 1080px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.chiprow{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.chip{border:1px solid var(--line); background:rgba(18,26,51,.65); padding:6px 10px; border-radius:999px; color:var(--muted); font-size:12px; backdrop-filter: blur(6px);}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.btn{border:1px solid var(--line); background: linear-gradient(180deg, rgba(18,26,51,.9), rgba(15,23,48,.9)); color:var(--text); padding:10px 12px; border-radius:12px; cursor:pointer; box-shadow: var(--shadow); transition: transform .08s ease, border-color .2s ease; font-size:13px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.btn:hover{transform: translateY(-1px); border-color: rgba(231,236,255,.22)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.btn.secondary{box-shadow:none; background:rgba(18,26,51,.5);}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.kpis{display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin: 10px 0 12px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>@media (max-width: 1180px){ .kpis{grid-template-columns: 1fr 1fr} }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.card{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border:1px solid var(--line); background: linear-gradient(180deg, rgba(18,26,51,.9), rgba(15,23,48,.85));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border-radius: var(--radius2); box-shadow: var(--shadow); padding: 14px 14px 12px; position:relative; overflow:hidden; min-height: 92px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.card:before{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>content:""; position:absolute; inset:-1px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: radial-gradient(520px 220px at 20% 10%, rgba(106,228,255,.10), transparent 55%),</p>
+<p class="p1"><span class="Apple-converted-space">                  </span>radial-gradient(520px 220px at 90% 0%, rgba(155,140,255,.10), transparent 55%);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>pointer-events:none;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.card &gt; *{position:relative}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.kpiLabel{color:var(--muted); font-size:12px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.kpiValue{font-size:22px; margin-top:6px; letter-spacing:.2px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.kpiHint{color:var(--muted); font-size:12px; margin-top:6px; line-height:1.35}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.kpiHint strong{color:var(--text); font-weight:600}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.kpiRow{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:6px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.kpiMini{display:flex; gap:8px; align-items:baseline; border: 1px solid rgba(231,236,255,.12); background: rgba(18,26,51,.35); padding: 6px 10px; border-radius: 12px; color: var(--muted); font-size: 12px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.kpiMini b{color:var(--text); font-size:13px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.alerts{display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; margin: 0 0 14px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>@media (max-width: 1180px){ .alerts{grid-template-columns: 1fr} }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.alert{border:1px solid rgba(231,236,255,.14); background: rgba(18,26,51,.45); border-radius: 18px; padding: 12px 14px; box-shadow: 0 10px 25px rgba(0,0,0,.25);}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.alert .t{font-size:12px; color: var(--muted)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.alert .v{font-size:16px; margin-top:6px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.alert .v b{font-weight:700}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.alert .s{font-size:12px; color: var(--muted); margin-top:6px; line-height:1.35}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>.tabs{display:flex; gap:8px; align-items:center; padding:6px; background:rgba(18,26,51,.5); border:1px solid var(--line); border-radius:999px; width: fit-content; box-shadow: 0 8px 20px rgba(0,0,0,.25);}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.tab{padding: 9px 12px; border-radius:999px; font-size:13px; color: var(--muted); cursor:pointer; border:1px solid transparent; user-select:none;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.tab.active{color:var(--text); background: rgba(106,228,255,.10); border-color: rgba(106,228,255,.25);}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>.toolbar{display:flex; gap:10px; align-items:flex-start; justify-content:space-between; margin: 14px 0 10px; flex-wrap:wrap;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.filters{display:flex; gap:10px; align-items:center; flex-wrap:wrap}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>input[type="text"], input[type="date"], select{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: rgba(18,26,51,.7); border:1px solid var(--line); color: var(--text); padding: 10px 12px; border-radius: 12px; outline:none; font-size: 13px; min-width: 250px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>input[type="date"]{min-width: 150px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>select{min-width: 190px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.mono{font-family: var(--mono)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill{display:inline-flex; align-items:center; gap:6px; padding: 4px 9px; border-radius:999px; border:1px solid rgba(231,236,255,.16); background: rgba(18,26,51,.5); color: var(--muted); font-size: 12px; white-space:nowrap;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.dot{width:7px; height:7px; border-radius:99px; background: var(--muted); opacity:.9}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill.good{border-color: rgba(62,240,168,.35); color: rgba(62,240,168,.95); background: rgba(62,240,168,.08)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill.good .dot{background: var(--good)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill.warn{border-color: rgba(255,209,102,.35); color: rgba(255,209,102,.95); background: rgba(255,209,102,.08)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill.warn .dot{background: var(--warn)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill.bad{border-color: rgba(255,92,122,.35); color: rgba(255,92,122,.95); background: rgba(255,92,122,.08)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill.bad .dot{background: var(--bad)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill.tierLow{border-color: rgba(62,240,168,.35); color: rgba(62,240,168,.95); background: rgba(62,240,168,.08)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill.tierLow .dot{background: var(--good)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill.tierMed{border-color: rgba(255,209,102,.35); color: rgba(255,209,102,.95); background: rgba(255,209,102,.08)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill.tierMed .dot{background: var(--warn)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill.tierHigh{border-color: rgba(255,92,122,.35); color: rgba(255,92,122,.95); background: rgba(255,92,122,.08)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill.tierHigh .dot{background: var(--bad)}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>.tierStrip{display:flex; gap:10px; flex-wrap:wrap; margin-top: 10px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.tierCard{border:1px solid rgba(231,236,255,.14); background: rgba(18,26,51,.35); border-radius: 16px; padding: 10px 12px; cursor:pointer; user-select:none;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.tierCard .t{color: var(--muted); font-size:12px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.tierCard .n{font-size:16px; margin-top:4px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.tierCard.active{outline: 1px solid rgba(106,228,255,.35); background: rgba(106,228,255,.08);}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>.main{display:grid; grid-template-columns: 1fr 430px; gap: 12px; align-items:start;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>@media (max-width: 1180px){ .main{grid-template-columns: 1fr} .detail{position:relative; top:0} }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.tableCard{border:1px solid var(--line); background: rgba(15,23,48,.75); border-radius: var(--radius2); box-shadow: var(--shadow); overflow:hidden;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>table{width:100%; border-collapse: separate; border-spacing: 0; font-size: 13px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>thead th{text-align:left; color: var(--muted); font-weight:600; padding: 12px 14px; border-bottom:1px solid var(--line); background: rgba(18,26,51,.95); position: sticky; top:0; z-index: 10;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>tbody td{padding: 11px 14px; border-bottom:1px solid rgba(231,236,255,.08); vertical-align: top;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>tbody tr{cursor:pointer; transition: background .12s ease;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>tbody tr:hover{background: rgba(106,228,255,.06);}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>tbody tr.selected{background: rgba(155,140,255,.10); outline: 1px solid rgba(155,140,255,.22);}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.tableFooter{display:flex; justify-content:space-between; align-items:center; padding: 10px 12px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); background: rgba(18,26,51,.35);}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pager{display:flex; gap:8px; align-items:center}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pager .btn{padding:8px 10px; border-radius: 10px; box-shadow:none}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>.detail{position: sticky; top: 12px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.detail .card{padding: 14px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.detail h2{font-size: 16px; margin:0 0 6px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.detail .muted{color:var(--muted); font-size: 12px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.kv{display:grid; grid-template-columns: 160px 1fr; gap: 8px 10px; margin-top: 12px; font-size: 13px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.k{color:var(--muted)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.v{color:var(--text); word-break: break-word}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.divider{height:1px; background: var(--line); margin: 12px 0;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.small{font-size: 12px; color: var(--muted); line-height: 1.35;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.linkish{color: rgba(106,228,255,.95); cursor: pointer; text-decoration: underline; text-underline-offset: 2px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.canvasWrap{border: 1px solid rgba(231,236,255,.14); background: rgba(18,26,51,.35); border-radius: 16px; padding: 10px 10px 6px; margin-top: 10px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>canvas{width:100%; height: 130px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.legend{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.legend span{color:var(--muted); font-size: 12px}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>.toast{position: fixed; right: 16px; bottom: 16px; background: rgba(18,26,51,.92); border: 1px solid rgba(231,236,255,.16); border-radius: 14px; box-shadow: var(--shadow); padding: 10px 12px; color: var(--text); font-size: 13px; display:none; max-width: 520px; z-index: 100;}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>/* Opportunities header (left panel) */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.opHeader{display:flex; gap:10px; align-items:center; justify-content:space-between; padding: 10px 12px; border-bottom: 1px solid rgba(231,236,255,.10); background: rgba(18,26,51,.35);}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.opHeader .h{font-size: 13px; color: var(--text)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.opHeader .d{font-size: 12px; color: var(--muted)}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>/* Daily matrix - Updated for Sticky Scrolling */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.matrixWrap{overflow:auto; max-height: 62vh; position: relative;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.matrix thead th{white-space:nowrap;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.matrix td,.matrix th{white-space:nowrap}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>/* Sticky Setup for Matrix */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.matrixWrap th:nth-child(1), .matrixWrap td:nth-child(1) { position: sticky; left: 0; z-index: 2; background: rgba(15,23,48,.95); border-right: 1px solid rgba(231,236,255,.12); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.matrixWrap th:nth-child(2), .matrixWrap td:nth-child(2) { position: sticky; left: 66px; z-index: 2; background: rgba(15,23,48,.95); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.matrixWrap th:nth-child(3), .matrixWrap td:nth-child(3) { position: sticky; left: 286px; z-index: 2; background: rgba(15,23,48,.95); border-right: 1px solid rgba(231,236,255,.12); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.matrixWrap thead th:nth-child(1), .matrixWrap thead th:nth-child(2), .matrixWrap thead th:nth-child(3) { z-index: 11; background: rgba(18,26,51,.95); }</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>.cell{display:flex; flex-direction:column; gap:2px; padding: 2px 0;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.cell .p{color: var(--text); font-variant-numeric: tabular-nums;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.cell .dl{color: var(--muted); font-size: 11px; font-family: var(--mono)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.cell.vacant .p{color: rgba(255,209,102,.95)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.cell.high .p{color: rgba(255,92,122,.95)}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.matrixActions{display:flex; gap:8px; align-items:center; flex-wrap:wrap}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.miniBtn{padding:7px 10px; border-radius:10px; font-size:12px; box-shadow:none}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>/* Modal */</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.modalBackdrop{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>position: fixed; inset:0; background: rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; padding: 18px; z-index: 50;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.modal{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>width: min(980px, 96vw); border: 1px solid rgba(231,236,255,.16); background: rgba(18,26,51,.95); border-radius: 18px; box-shadow: var(--shadow); overflow:hidden;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.modalHeader{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding: 12px 14px; border-bottom: 1px solid rgba(231,236,255,.12); background: rgba(15,23,48,.85);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.modalHeader .t{font-size: 14px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.modalHeader .s{font-size: 12px; color: var(--muted); margin-top:4px}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.modalBody{padding: 12px 14px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.modalBody canvas{height: 220px}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="app"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;header&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="title"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h1&gt;Fleet / Customers / Insurance — POC (V4 Final)&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="sub"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>Constraints enforced: &lt;b&gt;All vehicles have insurance at all times&lt;/b&gt;. Rate source is always:</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;b&gt;driver rate (active deal)&lt;/b&gt; → &lt;b&gt;last driver rate (ended deal)&lt;/b&gt; → &lt;b&gt;base rate (no driver history)&lt;/b&gt;.</p>
+<p class="p1"><span class="Apple-converted-space">          </span>V4 features the Daily Spend matrix with sticky columns, and full Match Simulator capabilities in the details pane.</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="chiprow"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="chip"&gt;Mock DB: generated in-browser&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="chip"&gt;Daily matrix: rate + DL per VIN per day&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="chip"&gt;Match Simulator enabled&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="row"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn secondary" id="btnRegenerate"&gt;Regenerate mock data&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn" id="btnExport"&gt;Export JSON&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/header&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;section class="kpis" id="kpis"&gt;&lt;/section&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;section class="alerts" id="alerts"&gt;&lt;/section&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="toolbar"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="tabs" role="tablist" aria-label="Views"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="tab active" id="tabCustomers" role="tab" tabindex="0"&gt;Customers&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="tab" id="tabVehicles" role="tab" tabindex="0"&gt;Vehicles&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="tab" id="tabOpp" role="tab" tabindex="0"&gt;Opportunities&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="tab" id="tabDaily" role="tab" tabindex="0"&gt;Daily Spend&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="filters" id="filters"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;input type="text" id="search" placeholder="Search (name, VIN, plate, deal #, tier, stage, location…)" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;select id="filterDeal"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="all"&gt;Deals: All&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="active"&gt;Deals: Active&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="none"&gt;Deals: None&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="ended"&gt;Deals: Ended (vehicles)&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="expiring30"&gt;Deals: Expiring ≤30d&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;select id="filterLocation"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;option value="all"&gt;Location: All&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/select&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="matrixActions" id="dailyControls" style="display:none"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;select id="rangePreset" style="min-width: 190px"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;option value="last_month"&gt;Range: Last month (rolling)&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;option value="mtd"&gt;Range: Month to date&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;option value="custom"&gt;Range: Custom&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;input type="date" id="rangeStart" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;input type="date" id="rangeEnd" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;button class="btn secondary miniBtn" id="btnApplyRange"&gt;Apply&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;button class="btn miniBtn" id="btnExportCSV"&gt;Export CSV&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="tierStrip" id="tierStrip"&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;section class="main"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="tableCard" id="leftPanel"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="leftHeader" class="opHeader" style="display:none"&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="tableWrap" style="max-height: 62vh; overflow:auto"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;table id="table" class="matrix"&gt;&lt;/table&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="tableFooter" id="footer"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div id="countText"&gt;—&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="pager"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button class="btn secondary" id="prevPage"&gt;Prev&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;span id="pageText" class="mono"&gt;—&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button class="btn secondary" id="nextPage"&gt;Next&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;aside class="detail" id="detail"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;h2&gt;Details&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="muted"&gt;Click a row to inspect the record.&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="divider"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="small"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>Rate logic is enforced per constraints. Select a vehicle to run the Match Simulator.</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/aside&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/section&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="toast" id="toast"&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="modalBackdrop" id="modalBackdrop" role="dialog" aria-modal="true"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="modal"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="modalHeader"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="t" id="modalTitle"&gt;VIN&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div class="s" id="modalSub"&gt;—&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn secondary miniBtn" id="modalClose"&gt;Close&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="modalBody"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;canvas id="modalChart" width="920" height="260"&gt;&lt;/canvas&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="legend" style="margin-top:10px"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;span&gt;Min: &lt;span class="mono" id="mMin"&gt;—&lt;/span&gt;&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;span&gt;Max: &lt;span class="mono" id="mMax"&gt;—&lt;/span&gt;&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;span&gt;Latest: &lt;span class="mono" id="mLast"&gt;—&lt;/span&gt;&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;span&gt;DL changes shown: &lt;span class="mono" id="mDL"&gt;—&lt;/span&gt;&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;script&gt;</p>
+<p class="p1">// ---------- Core Utils ----------</p>
+<p class="p1">function mulberry32(seed){return function(){let t=seed+=0x6D2B79F5;t=Math.imul(t^(t&gt;&gt;&gt;15),t|1);t^=t+Math.imul(t^(t&gt;&gt;&gt;7),t|61);return((t^(t&gt;&gt;&gt;14))&gt;&gt;&gt;0)/4294967296}}</p>
+<p class="p1">function randInt(rng,min,max){return Math.floor(rng()*(max-min+1))+min}</p>
+<p class="p1">function pick(rng,arr){return arr[Math.floor(rng()*arr.length)]}</p>
+<p class="p1">function pad(n,len){return String(n).padStart(len,'0')}</p>
+<p class="p1">function today0(){const d=new Date();d.setHours(0,0,0,0);return d}</p>
+<p class="p1">function startOfYear(){const d=today0();d.setMonth(0,1);return d}</p>
+<p class="p1">function startOfMonth(){const d=today0();d.setDate(1);return d}</p>
+<p class="p1">function dateISO(d){const z=new Date(d);z.setHours(0,0,0,0);return z.toISOString().slice(0,10)}</p>
+<p class="p1">function addDays(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}</p>
+<p class="p1">function parseISO(s){const d=new Date(s); d.setHours(0,0,0,0); return d;}</p>
+<p class="p1">function money(n){return "$"+n.toLocaleString(undefined,{maximumFractionDigits:0})}</p>
+<p class="p1">function money2(n){return "$"+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
+<p class="p1">function clamp(n,a,b){return Math.max(a,Math.min(b,n))}</p>
+<p class="p1">const el=(id)=&gt;document.getElementById(id);</p>
+<p class="p1">function escapeHTML(str){return String(str).replace(/[&amp;&lt;&gt;"']/g,s=&gt;({"&amp;":"&amp;amp;","&lt;":"&amp;lt;","&gt;":"&amp;gt;",'"':"&amp;quot;","'":"&amp;#039;"}[s]))}</p>
+<p class="p1">function fmtShortDL(dl){ if(!dl) return "—"; const s=String(dl); return s.length&lt;=6? s : (s.slice(0,2)+"…"+s.slice(-4)); }</p>
+<p class="p2"><br></p>
+<p class="p1">// ---------- Business Logic &amp; Tiers ----------</p>
+<p class="p1">const TIER={LOW_MAX:7500, MED_MAX:9000};</p>
+<p class="p1">function rateTier(annual){ if(annual&lt;=TIER.LOW_MAX) return "Low"; if(annual&lt;=TIER.MED_MAX) return "Med"; return "High"; }</p>
+<p class="p1">function tierPill(t){ if(t==="Low") return `&lt;span class="pill tierLow"&gt;&lt;span class="dot"&gt;&lt;/span&gt;Low&lt;/span&gt;`; if(t==="Med") return `&lt;span class="pill tierMed"&gt;&lt;span class="dot"&gt;&lt;/span&gt;Med&lt;/span&gt;`; return `&lt;span class="pill tierHigh"&gt;&lt;span class="dot"&gt;&lt;/span&gt;High&lt;/span&gt;`; }</p>
+<p class="p1">function dealPill(active){ if(active===true) return `&lt;span class="pill good"&gt;&lt;span class="dot"&gt;&lt;/span&gt;Active&lt;/span&gt;`; if(active===false) return `&lt;span class="pill warn"&gt;&lt;span class="dot"&gt;&lt;/span&gt;No&lt;/span&gt;`; return `&lt;span class="pill"&gt;&lt;span class="dot"&gt;&lt;/span&gt;—&lt;/span&gt;`; }</p>
+<p class="p1">function ratePill(source){ if(source==="driver") return `&lt;span class="pill good"&gt;&lt;span class="dot"&gt;&lt;/span&gt;Driver&lt;/span&gt;`; if(source==="last_driver") return `&lt;span class="pill warn"&gt;&lt;span class="dot"&gt;&lt;/span&gt;Last driver&lt;/span&gt;`; if(source==="base") return `&lt;span class="pill"&gt;&lt;span class="dot"&gt;&lt;/span&gt;Base&lt;/span&gt;`; return `&lt;span class="pill"&gt;&lt;span class="dot"&gt;&lt;/span&gt;${source||"—"}&lt;/span&gt;`; }</p>
+<p class="p1">function diamondPill(expISO){const d=new Date(expISO), now=today0(), diff=Math.round((d-now)/86400000); if(diff&lt;0) return `&lt;span class="pill bad"&gt;&lt;span class="dot"&gt;&lt;/span&gt;Expired&lt;/span&gt;`; if(diff&lt;=30) return `&lt;span class="pill warn"&gt;&lt;span class="dot"&gt;&lt;/span&gt;Expiring&lt;/span&gt;`; return `&lt;span class="pill good"&gt;&lt;span class="dot"&gt;&lt;/span&gt;Valid&lt;/span&gt;`;}</p>
+<p class="p1">function dealEndsSoon(endISO){ if(!endISO) return false; const end=new Date(endISO), now=today0(); const diff=Math.round((end-now)/86400000); return diff&gt;=0 &amp;&amp; diff&lt;=30; }</p>
+<p class="p2"><br></p>
+<p class="p1">// ---------- Mock Data Generation (Retained from V3) ----------</p>
+<p class="p1">const MAKES=[{make:"Toyota",models:["Camry","Corolla","RAV4","Highlander","Prius"]},{make:"Honda",models:["Civic","Accord","CR-V","Pilot"]},{make:"Nissan",models:["Altima","Sentra","Rogue","Maxima"]},{make:"Hyundai",models:["Elantra","Sonata","Tucson","Santa Fe"]},{make:"Kia",models:["Forte","K5","Sportage","Sorento"]},{make:"Chevrolet",models:["Malibu","Impala","Equinox"]},{make:"Ford",models:["Fusion","Escape","Edge"]},{make:"Volkswagen",models:["Jetta","Passat","Tiguan"]}];</p>
+<p class="p1">const LOCATIONS=["with driver","bodyshop","out for repo"];</p>
+<p class="p1">const CHANNELS=["Rental","Package"];</p>
+<p class="p1">function genVIN(rng){const chars="ABCDEFGHJKLMNPRSTUVWXYZ0123456789";let s="";for(let i=0;i&lt;17;i++) s+=chars[Math.floor(rng()*chars.length)];return s;}</p>
+<p class="p1">function genPlate(rng){const letters="ABCDEFGHJKLMNPRSTUVWXYZ";let a="";for(let i=0;i&lt;3;i++) a+=letters[Math.floor(rng()*letters.length)];return `${a}-${pad(randInt(rng,0,9999),4)}`;}</p>
+<p class="p1">function genDL(rng){return "D-"+pad(randInt(rng,0,99999999),8)}</p>
+<p class="p1">function genTLC(rng){return "T"+pad(randInt(rng,0,99999999),8)}</p>
+<p class="p1">function genName(rng){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const first=["Avi","Noam","Daniel","Yonatan","Eitan","Lior","Itai","Gil","Nadav","Oren","Omer","Tomer","Amir","Tal","Shai","Yael","Maya","Dana","Noa","Shira","Leah","Roni","Avital","Gaya"];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const last=["Cohen","Levi","Mizrahi","Peretz","Biton","Friedman","Goldberg","Kaplan","Shamir","Rosen","Katz","Dahan","Amar","Ben-David","Azoulay","Golan","Haddad","Barak","Nissan","Sasson","Dayan","Sharabi","Eliasi"];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const company=["Metro","City","Prime","Diamond","Liberty","Swift","Everest","Atlas","BlueLine","Urban","Summit","Iron","Nova","Orion"];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(rng()&lt;0.22) return `${pick(rng,company)} ${pick(rng,["Fleet","Transport","Mobility","Cars","Rentals","Logistics"])} LLC`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return `${pick(rng,first)} ${pick(rng,last)}`;</p>
+<p class="p1">}</p>
+<p class="p1">function genDiamond(rng){return "DIA-"+pad(randInt(rng,0,999999),6)}</p>
+<p class="p1">function fmtRateAnnual(n){return Math.round(n/10)*10}</p>
+<p class="p1">function buildRateHistory(rng, mode, baseAnnual, targetAnnual, switchesYTD){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const days=120, out=[];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const end=today0(), start=addDays(end, -(days-1));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const maxShown=clamp(switchesYTD,0,5);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const shown=(mode==="base")?0:randInt(rng,0,maxShown);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const switchOffsets=[];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=0;i&lt;shown;i++) switchOffsets.push(randInt(rng,8,days-8));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>switchOffsets.sort((a,b)=&gt;a-b);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let segAnnual=(mode==="base")?baseAnnual:fmtRateAnnual(randInt(rng,6000,10000));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let next=0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=0;i&lt;days;i++){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let switched=false;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(next&lt;switchOffsets.length &amp;&amp; i===switchOffsets[next]){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>segAnnual=fmtRateAnnual(randInt(rng,6000,10000));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>switched=true;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>next++;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(i&gt;=days-10) segAnnual=targetAnnual;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const d=addDays(start,i);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const daily=Math.round((segAnnual/365)*100)/100;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>out.push({date:dateISO(d), annual:segAnnual, daily, switched});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return out;</p>
+<p class="p1">}</p>
+<p class="p1">function buildDriverTimeline(rng, vehicle, baseAnnual, customersById){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const history = vehicle.rate_history_120d || [];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const map = {};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(history.length===0) return {mapByDate:map, dlChangesCount:0};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>let dlChanges=0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let currentDriverId = vehicle.current_driver_customer_id || null;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let lastDriverId = vehicle.last_driver_customer_id || null;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const changePoints = [];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(vehicle.has_active_deal &amp;&amp; currentDriverId &amp;&amp; vehicle.drivers_switched_ytd&gt;0){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const changes = clamp(vehicle.drivers_switched_ytd,1,4);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>for(let i=0;i&lt;changes;i++){ changePoints.push(randInt(rng,10,history.length-10)); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>changePoints.sort((a,b)=&gt;a-b);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const altDrivers = [];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=0;i&lt;changePoints.length;i++){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const alt = customersById["C"+pad(randInt(rng,1,1075),4)];</p>
+<p class="p1"><span class="Apple-converted-space">    </span>altDrivers.push(alt ? alt.id : currentDriverId);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>let segIdx=-1;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let segDriverId=null;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=0;i&lt;history.length;i++){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(segIdx+1 &lt; changePoints.length &amp;&amp; i===changePoints[segIdx+1]){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>segIdx++; segDriverId=altDrivers[segIdx]; dlChanges++;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>let driverId=null, dl=null, annual=vehicle.insurance_annual_rate, source=vehicle.insurance_rate_source;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(vehicle.has_active_deal){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>driverId = segDriverId || currentDriverId;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const c = driverId ? customersById[driverId] : null;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>dl = c ? c.dl_number : null;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>annual = history[i].annual;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>source="driver";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>} else if(lastDriverId){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const c = customersById[lastDriverId];</p>
+<p class="p1"><span class="Apple-converted-space">      </span>dl = c ? c.dl_number : null;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>annual = history[i].annual;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>source="last_driver";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>dl = null;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>annual = baseAnnual;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>source="base";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>map[history[i].date] = {date: history[i].date, daily: history[i].daily, annual, dl, driverId, source};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>return {mapByDate: map, dlChangesCount: dlChanges};</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function generateMockDB(seed){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const rng=mulberry32(seed);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const customersCount=1075, vehiclesCount=1000;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const customersWithoutDeal=randInt(rng,120,220);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const customersWithDeal=customersCount-customersWithoutDeal;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vehiclesWithoutDriver=randInt(rng,70,150);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vehiclesWithPotentialDeal=vehiclesCount-vehiclesWithoutDriver;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const activeDeals=Math.min(customersWithDeal, vehiclesWithPotentialDeal);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const endedDealsVehicles=randInt(rng,120,260);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const baseRateAnnual=8200;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vehicles=[], usedVIN=new Set();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=0;i&lt;vehiclesCount;i++){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let vin=genVIN(rng); while(usedVIN.has(vin)) vin=genVIN(rng); usedVIN.add(vin);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const makeObj=pick(rng,MAKES), model=pick(rng,makeObj.models), year=randInt(rng,2016,2024);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const diamondExp=addDays(today0(), randInt(rng,-120,540));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>vehicles.push({</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id:"V"+pad(i+1,4), type_make_model:`${makeObj.make} ${model} ${year}`,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>vin, plate: genPlate(rng), diamond: genDiamond(rng), diamond_expiration_date: dateISO(diamondExp),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>has_active_deal:false, deal_number:null, deal_start_date:null, deal_end_date:null, sales_channel:null,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>vehicle_location: pick(rng,LOCATIONS), different_drivers_ytd: randInt(rng,0,5), drivers_switched_ytd: 0,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>insurance_annual_rate: baseRateAnnual, insurance_daily_rate: Math.round((baseRateAnnual/365)*100)/100,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>insurance_rate_source:"base", current_driver_customer_id:null, last_driver_customer_id:null, last_driver_annual_rate:null,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>rate_history_120d: [], status_changed_at: dateISO(addDays(today0(), -randInt(rng,0,30))),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>daily_map_120d: null, dl_changes_120d: 0</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const customers=[];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=0;i&lt;customersCount;i++){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const annual=fmtRateAnnual(randInt(rng,6000,10000));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>customers.push({</p>
+<p class="p1"><span class="Apple-converted-space">      </span>id:"C"+pad(i+1,4), name: genName(rng), dl_number: genDL(rng), tlc_number: genTLC(rng),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>insurance_annual_rate: annual, insurance_daily_rate: Math.round((annual/365)*100)/100, rate_tier: rateTier(annual),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>has_active_deal:false, deal_number:null, vin:null, is_lead:true,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>lead_stage: pick(rng,["New","Underwriting","Approved","Docs pending","Ready to match"]),</p>
+<p class="p1"><span class="Apple-converted-space">      </span>created_at: dateISO(addDays(today0(), -randInt(rng,0,90)))</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vIdx=[...Array(vehiclesCount).keys()];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=vIdx.length-1;i&gt;0;i--){const j=Math.floor(rng()*(i+1));[vIdx[i],vIdx[j]]=[vIdx[j],vIdx[i]];}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const activeVehiclePool=vIdx.slice(0,activeDeals);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const cIdx=[...Array(customersCount).keys()];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=cIdx.length-1;i&gt;0;i--){const j=Math.floor(rng()*(i+1));[cIdx[i],cIdx[j]]=[cIdx[j],cIdx[i]];}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const activeCustomerPool=cIdx.slice(0,activeDeals);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>let dealSeq=100000;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let k=0;k&lt;activeDeals;k++){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const c=customers[activeCustomerPool[k]];</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const v=vehicles[activeVehiclePool[k]];</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const dealNum="DL-"+(dealSeq++);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>c.has_active_deal=true; c.deal_number=dealNum; c.vin=v.vin; c.is_lead=false; c.lead_stage=null;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.has_active_deal=true; v.deal_number=dealNum;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const start=addDays(today0(), -randInt(rng,0,240));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const dur=randInt(rng,30,365);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let end=addDays(start,dur);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(rng()&lt;0.12){ end = addDays(today0(), randInt(rng,0,30)); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.deal_start_date=dateISO(addDays(end, -randInt(rng,30,365)));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.deal_end_date=dateISO(end);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.sales_channel=pick(rng,CHANNELS);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.current_driver_customer_id=c.id;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.different_drivers_ytd=Math.max(1,randInt(rng,1,5));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.drivers_switched_ytd=Math.max(0,v.different_drivers_ytd-1);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.insurance_annual_rate=c.insurance_annual_rate;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.insurance_daily_rate=Math.round((v.insurance_annual_rate/365)*100)/100;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.insurance_rate_source="driver";</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const noActive=vehicles.filter(v=&gt;!v.has_active_deal);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=noActive.length-1;i&gt;0;i--){const j=Math.floor(rng()*(i+1));[noActive[i],noActive[j]]=[noActive[j],noActive[i]];}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const endedPool=noActive.slice(0, Math.min(endedDealsVehicles, noActive.length));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(const v of endedPool){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const c=customers[randInt(rng,0,customers.length-1)];</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.last_driver_customer_id=c.id; v.last_driver_annual_rate=c.insurance_annual_rate;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const end=addDays(today0(), -randInt(rng,1,240));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const dur=randInt(rng,30,365);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.deal_number=v.deal_number || ("DL-"+(dealSeq++));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.deal_end_date=dateISO(end); v.deal_start_date=dateISO(addDays(end,-dur));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.sales_channel=pick(rng,CHANNELS);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.different_drivers_ytd=Math.max(1,randInt(rng,1,5));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.drivers_switched_ytd=Math.max(0,v.different_drivers_ytd-1);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.insurance_annual_rate=c.insurance_annual_rate;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.insurance_daily_rate=Math.round((v.insurance_annual_rate/365)*100)/100;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.insurance_rate_source="last_driver";</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const noDeal=vehicles.filter(v=&gt;!v.has_active_deal);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=noDeal.length-1;i&gt;0;i--){const j=Math.floor(rng()*(i+1));[noDeal[i],noDeal[j]]=[noDeal[j],noDeal[i]];}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const trulyNoDriver=noDeal.slice(0, Math.min(vehiclesWithoutDriver, noDeal.length));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(const v of trulyNoDriver){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.last_driver_customer_id=null; v.last_driver_annual_rate=null;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.deal_number=null; v.deal_start_date=null; v.deal_end_date=null; v.sales_channel=null;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.insurance_annual_rate=baseRateAnnual; v.insurance_daily_rate=Math.round((baseRateAnnual/365)*100)/100; v.insurance_rate_source="base";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.different_drivers_ytd=0; v.drivers_switched_ytd=0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const customersById=Object.fromEntries(customers.map(c=&gt;[c.id,c]));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vehiclesByVIN=Object.fromEntries(vehicles.map(v=&gt;[v.vin,v]));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(const v of vehicles){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.rate_history_120d = buildRateHistory(rng, v.insurance_rate_source, baseRateAnnual, v.insurance_annual_rate, v.drivers_switched_ytd);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const {mapByDate, dlChangesCount} = buildDriverTimeline(rng, v, baseRateAnnual, customersById);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.daily_map_120d = mapByDate;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>v.dl_changes_120d = dlChangesCount;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>return { meta:{seed, generated_at:new Date().toISOString(), customers_count:customers.length, vehicles_count:vehicles.length, base_rate_annual:baseRateAnnual}, customers, vehicles, index:{customersById, vehiclesByVIN}};</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">// ---------- UI State ----------</p>
+<p class="p1">let DB;</p>
+<p class="p1">let view="customers";</p>
+<p class="p1">let page=1;</p>
+<p class="p1">const pageSize=40;</p>
+<p class="p1">let selectedKey=null;</p>
+<p class="p1">let lastToastTimeout=null;</p>
+<p class="p1">let tierFilter="all";</p>
+<p class="p1">let OPPS=[];</p>
+<p class="p1">let oppSection="all";</p>
+<p class="p1">let dailyRange = {start:null, end:null};</p>
+<p class="p2"><br></p>
+<p class="p1">function toast(msg){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const t=el("toast"); t.textContent=msg; t.style.display="block";</p>
+<p class="p1"><span class="Apple-converted-space">  </span>clearTimeout(lastToastTimeout);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>lastToastTimeout=setTimeout(()=&gt;{t.style.display="none";},2400);</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">// ---------- KPIs &amp; Alerts ----------</p>
+<p class="p1">function computeSpend(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vehicles=DB.vehicles;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const dailySpendAll=vehicles.reduce((s,v)=&gt;s+(v.insurance_daily_rate || (v.insurance_annual_rate/365)),0);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const daysYTD=Math.max(1, Math.round((today0()-startOfYear())/86400000)+1);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const daysMTD=Math.max(1, Math.round((today0()-startOfMonth())/86400000)+1);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return {dailySpendAll, spentYTD: dailySpendAll*daysYTD, spentMTD: dailySpendAll*daysMTD};</p>
+<p class="p1">}</p>
+<p class="p1">function computeMoneyOnFloor(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vehicles=DB.vehicles;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vacant=vehicles.filter(v=&gt;!v.has_active_deal &amp;&amp; !v.last_driver_customer_id);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vacantDaily=vacant.reduce((s,v)=&gt;s+v.insurance_daily_rate,0);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const medCapDaily = Math.round((TIER.MED_MAX/365)*100)/100;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const highPremiumDaily = vehicles.filter(v=&gt;rateTier(v.insurance_annual_rate)==="High").reduce((s,v)=&gt;s+Math.max(0,(v.insurance_daily_rate - medCapDaily)),0);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return {vacantDaily, highPremiumDaily, totalAvoidableDaily: vacantDaily + highPremiumDaily};</p>
+<p class="p1">}</p>
+<p class="p1">function renderKPIs(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const customers=DB.customers, vehicles=DB.vehicles;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const {dailySpendAll, spentYTD, spentMTD}=computeSpend();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const mof=computeMoneyOnFloor();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vacantVehicles = vehicles.filter(v=&gt;!v.has_active_deal &amp;&amp; !v.last_driver_customer_id).length;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const expiring30 = vehicles.filter(v=&gt;v.has_active_deal &amp;&amp; dealEndsSoon(v.deal_end_date)).length;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const highTierVehicles = vehicles.filter(v=&gt;rateTier(v.insurance_annual_rate)==="High").length;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const switched3Plus = vehicles.filter(v=&gt;v.drivers_switched_ytd&gt;=3).length;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const totalVehicles = vehicles.length;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const penalty = ((vacantVehicles/totalVehicles)*55) + ((highTierVehicles/totalVehicles)*35) + (switched3Plus/totalVehicles*10);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const efficiency = Math.round(clamp(100-penalty,0,100));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const tierCounts={Low:0,Med:0,High:0}, leadTierCounts={Low:0,Med:0,High:0};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(const c of customers){ tierCounts[c.rate_tier]++; if(!c.has_active_deal) leadTierCounts[c.rate_tier]++; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const leads = customers.filter(c=&gt;!c.has_active_deal).length;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("kpis").innerHTML = [</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{label:"Insurance spent", value: money(Math.round(spentYTD)), hint:`&lt;div class="kpiRow"&gt;&lt;div class="kpiMini"&gt;&lt;span&gt;YTD&lt;/span&gt; &lt;b&gt;${money(Math.round(spentYTD))}&lt;/b&gt;&lt;/div&gt;&lt;div class="kpiMini"&gt;&lt;span&gt;MTD&lt;/span&gt; &lt;b&gt;${money(Math.round(spentMTD))}&lt;/b&gt;&lt;/div&gt;&lt;div class="kpiMini"&gt;&lt;span&gt;Daily avg&lt;/span&gt; &lt;b&gt;${money(Math.round(dailySpendAll))}&lt;/b&gt;&lt;/div&gt;&lt;/div&gt;`},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{label:"Money on the floor (daily)", value: money(Math.round(mof.totalAvoidableDaily)), hint:`Vacant burn: &lt;strong&gt;${money(Math.round(mof.vacantDaily))}&lt;/strong&gt; • High-tier premium: &lt;strong&gt;${money(Math.round(mof.highPremiumDaily))}&lt;/strong&gt;`},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{label:"Insurance efficiency score", value: `${efficiency} / 100`, hint:`Vacant: &lt;strong&gt;${vacantVehicles}&lt;/strong&gt; • Expiring ≤30d: &lt;strong&gt;${expiring30}&lt;/strong&gt; • High tier: &lt;strong&gt;${highTierVehicles}&lt;/strong&gt; • 3+ switches: &lt;strong&gt;${switched3Plus}&lt;/strong&gt;`},</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{label:"Pipeline &amp; tiers", value: `${leads.toLocaleString()} leads`, hint:`All tiers: Low ${tierCounts.Low} • Med ${tierCounts.Med} • High ${tierCounts.High}&lt;br/&gt;Lead tiers: Low ${leadTierCounts.Low} • Med ${leadTierCounts.Med} • High ${leadTierCounts.High}`}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>].map(x=&gt;`&lt;div class="card"&gt;&lt;div class="kpiLabel"&gt;${x.label}&lt;/div&gt;&lt;div class="kpiValue"&gt;${x.value}&lt;/div&gt;&lt;div class="kpiHint"&gt;${x.hint}&lt;/div&gt;&lt;/div&gt;`).join("");</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function daysSince(iso){ if(!iso) return 0; const d=new Date(iso); d.setHours(0,0,0,0); return Math.round((today0()-d)/86400000); }</p>
+<p class="p1">function daysUntil(iso){ if(!iso) return 9999; const d=new Date(iso); d.setHours(0,0,0,0); return Math.round((d-today0())/86400000); }</p>
+<p class="p1">function renderAlerts(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vehicles=DB.vehicles, customers=DB.customers;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vacant7d = vehicles.filter(v=&gt;!v.has_active_deal &amp;&amp; !v.last_driver_customer_id &amp;&amp; daysSince(v.status_changed_at) &gt;= 7);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const expiring14d = vehicles.filter(v=&gt;v.has_active_deal &amp;&amp; daysUntil(v.deal_end_date) &lt;= 14 &amp;&amp; daysUntil(v.deal_end_date) &gt;= 0);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const highTierSwitchy = vehicles.filter(v=&gt;rateTier(v.insurance_annual_rate)==="High" &amp;&amp; v.drivers_switched_ytd&gt;=3);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const lowLeads = customers.filter(c=&gt;!c.has_active_deal &amp;&amp; c.rate_tier==="Low");</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("alerts").innerHTML = `</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="alert"&gt;&lt;div class="t"&gt;Queue&lt;/div&gt;&lt;div class="v"&gt;&lt;b&gt;${vacant7d.length}&lt;/b&gt; vacant vehicles &amp;gt; 7 days&lt;/div&gt;&lt;div class="s"&gt;Paying base rate daily with no driver history. Pair with low-tier leads (available: &lt;b&gt;${lowLeads.length}&lt;/b&gt;).&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="alert"&gt;&lt;div class="t"&gt;At-risk&lt;/div&gt;&lt;div class="v"&gt;&lt;b&gt;${expiring14d.length}&lt;/b&gt; deals expiring in 14 days&lt;/div&gt;&lt;div class="s"&gt;Prioritize replacements so these don’t become vacant. Use Daily Spend to validate DL changes over time.&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="alert"&gt;&lt;div class="t"&gt;Overpay / churn&lt;/div&gt;&lt;div class="v"&gt;&lt;b&gt;${highTierSwitchy.length}&lt;/b&gt; vehicles High-tier + 3+ switches&lt;/div&gt;&lt;div class="s"&gt;Often correlates with volatile rates and operational churn. Investigate driver stability.&lt;/div&gt;&lt;/div&gt;`;</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">// ---------- Filters &amp; Tiers ----------</p>
+<p class="p1">function renderTierStrip(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const leads=DB.customers.filter(c=&gt;!c.has_active_deal);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const tiers=["Low","Med","High"];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let counts={Low:0,Med:0,High:0};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(view==="customers"){ for(const c of DB.customers) counts[c.rate_tier]++; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>else if(view==="opportunities"){ for(const c of leads) counts[c.rate_tier]++; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>else { for(const v of DB.vehicles) counts[rateTier(v.insurance_annual_rate)]++; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const cards=[ {key:"all", title:"Tier filter", num:"All", sub:"Click a tier to filter"}, ...tiers.map(t=&gt;({key:t, title:`${t} tier`, num: counts[t].toLocaleString(), sub:(view==="opportunities"?"leads":"vehicles")})) ];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("tierStrip").innerHTML = cards.map(c=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const active=(tierFilter===c.key)?"active":"";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const tag=c.key==="Low"?tierPill("Low"):c.key==="Med"?tierPill("Med"):c.key==="High"?tierPill("High"):`&lt;span class="pill"&gt;&lt;span class="dot"&gt;&lt;/span&gt;All&lt;/span&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return `&lt;div class="tierCard ${active}" data-tier="${c.key}"&gt;&lt;div class="t"&gt;${c.title}&lt;/div&gt;&lt;div class="n"&gt;${tag} &lt;span class="mono" style="margin-left:8px"&gt;${escapeHTML(c.num)}&lt;/span&gt;&lt;/div&gt;&lt;div class="t" style="margin-top:4px"&gt;${c.sub}&lt;/div&gt;&lt;/div&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}).join("");</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("tierStrip").querySelectorAll(".tierCard").forEach(x=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>x.addEventListener("click", ()=&gt;{ tierFilter=x.getAttribute("data-tier"); page=1; selectedKey=null; renderTierStrip(); renderTable(); renderDetail(); });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p1">}</p>
+<p class="p1">function getSearchTerm(){ return el("search").value.trim().toLowerCase(); }</p>
+<p class="p1">function getDealFilter(){ return el("filterDeal").value; }</p>
+<p class="p1">function getLocFilter(){ return el("filterLocation").value; }</p>
+<p class="p1">function passesTierCustomer(c){ return tierFilter==="all" ? true : (c.rate_tier===tierFilter); }</p>
+<p class="p1">function passesTierVehicle(v){ return tierFilter==="all" ? true : (rateTier(v.insurance_annual_rate)===tierFilter); }</p>
+<p class="p2"><br></p>
+<p class="p1">function filterCustomers(rows){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const q=getSearchTerm(), df=getDealFilter();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return rows.filter(c=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(!passesTierCustomer(c)) return false;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(df==="active" &amp;&amp; !c.has_active_deal) return false;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(df==="none" &amp;&amp; c.has_active_deal) return false;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(q){ const hay=[c.name,c.id,c.dl_number,c.tlc_number,c.deal_number||"",c.vin||"",c.rate_tier,c.lead_stage||""].join(" ").toLowerCase(); if(!hay.includes(q)) return false; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return true;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p1">}</p>
+<p class="p1">function filterVehicles(rows){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const q=getSearchTerm(), df=getDealFilter(), lf=getLocFilter();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return rows.filter(v=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(!passesTierVehicle(v)) return false;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(lf!=="all" &amp;&amp; v.vehicle_location!==lf) return false;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(df==="active" &amp;&amp; !v.has_active_deal) return false;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(df==="none" &amp;&amp; (v.has_active_deal || v.last_driver_customer_id)) return false;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(df==="ended" &amp;&amp; (v.has_active_deal || !v.last_driver_customer_id)) return false;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(df==="expiring30" &amp;&amp; !(v.has_active_deal &amp;&amp; dealEndsSoon(v.deal_end_date))) return false;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(q){ const hay=[v.type_make_model,v.vin,v.plate,v.diamond,v.deal_number||"",v.vehicle_location,v.current_driver_customer_id||"",v.last_driver_customer_id||"",rateTier(v.insurance_annual_rate),v.sales_channel||""].join(" ").toLowerCase(); if(!hay.includes(q)) return false; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return true;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p1">}</p>
+<p class="p1">function paginate(rows){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const total=rows.length; const totalPages=Math.max(1, Math.ceil(total/pageSize));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>page=Math.max(1, Math.min(page,totalPages));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const start=(page-1)*pageSize; return {slice: rows.slice(start,start+pageSize), total, totalPages};</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">// ---------- Opportunities ----------</p>
+<p class="p1">function buildOpportunities(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vehicles=DB.vehicles, leads=DB.customers.filter(c=&gt;!c.has_active_deal);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const lowMedLeads = leads.filter(c=&gt;c.rate_tier!=="High").sort((a,b)=&gt;a.insurance_annual_rate-b.insurance_annual_rate);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vacant = vehicles.filter(v=&gt;!v.has_active_deal &amp;&amp; !v.last_driver_customer_id).map(v=&gt;({kind:"Vacant", v}));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const expiring = vehicles.filter(v=&gt;v.has_active_deal &amp;&amp; dealEndsSoon(v.deal_end_date)).map(v=&gt;({kind:"Expiring ≤30d", v}));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const highTier = vehicles.filter(v=&gt;rateTier(v.insurance_annual_rate)==="High" &amp;&amp; v.has_active_deal).map(v=&gt;({kind:"High-tier active", v}));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const out=[]; let cursor=0; function pickLead(){ return cursor&lt;lowMedLeads.length ? lowMedLeads[cursor++] : null; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(const item of [...vacant, ...expiring, ...highTier]){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const lead=pickLead(), v=item.v;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const currentDaily=v.insurance_daily_rate, leadDaily=lead?lead.insurance_daily_rate:null;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const savingsDaily=(leadDaily!=null)?Math.max(0,currentDaily-leadDaily):null;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>out.push({</p>
+<p class="p1"><span class="Apple-converted-space">      </span>kind:item.kind, vin:v.vin, vehicle:v.type_make_model, location:v.vehicle_location, deal_end:v.deal_end_date,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>current_tier: rateTier(v.insurance_annual_rate), current_daily: currentDaily, current_source: v.insurance_rate_source,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>switches:v.drivers_switched_ytd, lead_id: lead?lead.id:null, lead_name: lead?lead.name:null, lead_tier: lead?lead.rate_tier:null,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>lead_daily: leadDaily, savings_daily: savingsDaily, savings_30d: savingsDaily!=null ? savingsDaily*30 : null</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>out.sort((a,b)=&gt; (b.savings_daily||-1) - (a.savings_daily||-1)); return out;</p>
+<p class="p1">}</p>
+<p class="p1">function renderOppHeader(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const counts = { all: OPPS.length, vacant: OPPS.filter(o=&gt;o.kind==="Vacant").length, expiring: OPPS.filter(o=&gt;o.kind.startsWith("Expiring")).length, hightier: OPPS.filter(o=&gt;o.kind.startsWith("High-tier")).length };</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const buttons = [ {k:"all", label:`All (${counts.all})`}, {k:"vacant", label:`Vacant (${counts.vacant})`}, {k:"expiring", label:`Expiring ≤30d (${counts.expiring})`}, {k:"hightier", label:`High-tier (${counts.hightier})`} ].map(b=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const on=(oppSection===b.k)?"good":""; return `&lt;span class="pill ${on}" style="cursor:pointer" data-opp="${b.k}"&gt;&lt;span class="dot"&gt;&lt;/span&gt;${b.label}&lt;/span&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}).join(" ");</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("leftHeader").style.display="flex"; el("leftHeader").innerHTML = `&lt;div&gt;&lt;div class="h"&gt;Opportunities&lt;/div&gt;&lt;div class="d"&gt;Suggested matches: low-rate leads ↔ vacant / expiring vehicles. Includes estimated savings.&lt;/div&gt;&lt;/div&gt;&lt;div&gt;${buttons}&lt;/div&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("leftHeader").querySelectorAll("[data-opp]").forEach(x=&gt;{ x.addEventListener("click", ()=&gt;{ oppSection=x.getAttribute("data-opp"); page=1; selectedKey=null; renderTable(); renderDetail(); renderOppHeader(); }); });</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">// ---------- Daily Spend Config ----------</p>
+<p class="p1">function getDefaultDailyRange(){ const end=today0(), start=addDays(end, -29); return {start: dateISO(start), end: dateISO(end)}; }</p>
+<p class="p1">function setDailyControlsFromRange(range){ el("rangeStart").value = range.start; el("rangeEnd").value = range.end; }</p>
+<p class="p1">function computeRangeFromPreset(preset){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const end=today0();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(preset==="mtd"){ const start=startOfMonth(); return {start: dateISO(start), end: dateISO(end)}; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(preset==="last_month"){ const start=addDays(end, -29); return {start: dateISO(start), end: dateISO(end)}; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const s=el("rangeStart").value, e=el("rangeEnd").value; if(!s || !e) return getDefaultDailyRange(); return {start: s, end: e};</p>
+<p class="p1">}</p>
+<p class="p1">function listDatesInclusive(startISO,endISO){ const out=[]; let d=parseISO(startISO); const end=parseISO(endISO); while(d&lt;=end){ out.push(dateISO(d)); d=addDays(d,1); } return out; }</p>
+<p class="p1">function exportDailyCSV(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const range=dailyRange || getDefaultDailyRange(), dates=listDatesInclusive(range.start, range.end);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let vehicles = filterVehicles(DB.vehicles);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const q=getSearchTerm(); if(q) vehicles = vehicles.filter(v=&gt; [v.vin,v.type_make_model,v.plate,v.deal_number||"",v.vehicle_location].join(" ").toLowerCase().includes(q));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const lines=[["vin","vehicle","date","daily_rate","annual_rate","driver_dl","driver_customer_id","rate_source"].join(",")];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(const v of vehicles){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>for(const dt of dates){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const rec = (v.daily_map_120d &amp;&amp; v.daily_map_120d[dt]) ? v.daily_map_120d[dt] : null;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const daily = rec ? rec.daily : (v.insurance_daily_rate || 0), annual = rec ? rec.annual : (v.insurance_annual_rate || 0);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const dl = rec ? (rec.dl || "") : "", driverId = rec ? (rec.driverId || "") : "", src = rec ? (rec.source || "") : (v.insurance_rate_source || "");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>lines.push([`"${v.vin}"`, `"${v.type_make_model.replace(/"/g,'""')}"`, dt, daily.toFixed(2), Math.round(annual), `"${dl}"`, `"${driverId}"`, `"${src}"`].join(","));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const blob=new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`daily_spend_${range.start}_to_${range.end}.csv`; a.click(); URL.revokeObjectURL(a.href); toast("Exported daily spend CSV.");</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function footerFor(total,label,totalPages){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("countText").textContent = `${total.toLocaleString()} ${label} • showing ${(total?((page-1)*pageSize+1):0).toLocaleString()}–${Math.min(page*pageSize,total).toLocaleString()}`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("pageText").textContent = `Page ${page} / ${totalPages}`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("prevPage").disabled = (page&lt;=1); el("nextPage").disabled = (page&gt;=totalPages);</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">// ---------- Charts ----------</p>
+<p class="p1">function drawLineChart(canvas, series){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const ctx=canvas.getContext("2d"), w=canvas.width, h=canvas.height; ctx.clearRect(0,0,w,h);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!series || series.length===0) return null;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const ys=series.map(p=&gt;p.y), minV=Math.min(...ys), maxV=Math.max(...ys), padV=(maxV-minV)===0?1:(maxV-minV)*0.12, lo=minV-padV, hi=maxV+padV;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>ctx.globalAlpha=0.85; ctx.strokeStyle="rgba(231,236,255,.18)"; ctx.lineWidth=1;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let g=1;g&lt;=3;g++){ const y=(h-20)*(g/4)+8; ctx.beginPath(); ctx.moveTo(8,y); ctx.lineTo(w-8,y); ctx.stroke(); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>ctx.globalAlpha=1; ctx.strokeStyle="rgba(106,228,255,.95)"; ctx.lineWidth=2; ctx.beginPath();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=0;i&lt;series.length;i++){ const x=8+(i/(series.length-1))*(w-16), y=8+(1-((series[i].y-lo)/(hi-lo)))*(h-28); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); } ctx.stroke();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>ctx.strokeStyle="rgba(255,209,102,.65)"; ctx.lineWidth=1; let dlChanges=0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=0;i&lt;series.length;i++){ if(series[i].dlChanged){ dlChanges++; const x=8+(i/(series.length-1))*(w-16); ctx.beginPath(); ctx.moveTo(x, 10); ctx.lineTo(x, h-22); ctx.stroke(); } }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const lastIdx=series.length-1, lx=8+(lastIdx/(series.length-1))*(w-16), ly=8+(1-((series[lastIdx].y-lo)/(hi-lo)))*(h-28); ctx.fillStyle="rgba(155,140,255,.95)"; ctx.beginPath(); ctx.arc(lx,ly,3.8,0,Math.PI*2); ctx.fill();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return {minV, maxV, lastV: series[lastIdx].y, dlChanges};</p>
+<p class="p1">}</p>
+<p class="p1">function openPlotModal(vin){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const v=DB.index.vehiclesByVIN[vin]; if(!v) return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const range=dailyRange || getDefaultDailyRange(), dates=listDatesInclusive(range.start, range.end), series=[]; let lastDL=null;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=0;i&lt;dates.length;i++){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const rec = v.daily_map_120d ? v.daily_map_120d[dates[i]] : null;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const daily = rec ? rec.daily : v.insurance_daily_rate, dl = rec ? (rec.dl || null) : null;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>series.push({x:i, y: daily, dlChanged: (i&gt;0 &amp;&amp; dl !== lastDL)}); lastDL = dl;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("modalTitle").textContent = `${v.type_make_model}`; el("modalSub").textContent = `VIN ${v.vin} • Range ${range.start} → ${range.end}`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const stats=drawLineChart(el("modalChart"), series);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("mMin").textContent = stats ? money2(stats.minV) : "—"; el("mMax").textContent = stats ? money2(stats.maxV) : "—"; el("mLast").textContent = stats ? money2(stats.lastV) : "—"; el("mDL").textContent = stats ? String(stats.dlChanges) : "—";</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("modalBackdrop").style.display="flex";</p>
+<p class="p1">}</p>
+<p class="p1">function closePlotModal(){ el("modalBackdrop").style.display="none"; }</p>
+<p class="p2"><br></p>
+<p class="p1">// ---------- Rendering Tables ----------</p>
+<p class="p1">function renderTable(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const table=el("table"), wrap=el("tableWrap");</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("leftHeader").style.display = (view==="opportunities") ? "flex" : "none";</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(view==="opportunities") renderOppHeader();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("dailyControls").style.display = (view==="daily") ? "flex" : "none";</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>let rows=[], paged, headers, bodyHTML;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(view==="customers"){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>wrap.classList.remove("matrixWrap");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>rows = filterCustomers(DB.customers); paged = paginate(rows);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>headers = `&lt;thead&gt;&lt;tr&gt;&lt;th style="width:84px"&gt;ID&lt;/th&gt;&lt;th&gt;Name&lt;/th&gt;&lt;th style="width:150px"&gt;DL #&lt;/th&gt;&lt;th style="width:150px"&gt;TLC #&lt;/th&gt;&lt;th style="width:170px"&gt;UW rate&lt;/th&gt;&lt;th style="width:120px"&gt;Tier&lt;/th&gt;&lt;th style="width:160px"&gt;Pipeline&lt;/th&gt;&lt;th style="width:150px"&gt;Active deal&lt;/th&gt;&lt;th style="width:140px"&gt;Deal #&lt;/th&gt;&lt;th style="width:200px"&gt;VIN&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>bodyHTML = `&lt;tbody&gt;` + paged.slice.map(c=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const pipeline=c.has_active_deal?`&lt;span class="small"&gt;—&lt;/span&gt;`:`&lt;span class="pill"&gt;&lt;span class="dot"&gt;&lt;/span&gt;${escapeHTML(c.lead_stage||"Lead")}&lt;/span&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>return `&lt;tr class="${selectedKey===c.id?"selected":""}" data-key="${c.id}"&gt;&lt;td class="mono"&gt;${c.id}&lt;/td&gt;&lt;td&gt;${escapeHTML(c.name)}&lt;/td&gt;&lt;td class="mono"&gt;${c.dl_number}&lt;/td&gt;&lt;td class="mono"&gt;${c.tlc_number}&lt;/td&gt;&lt;td&gt;${money(c.insurance_annual_rate)} &lt;span class="small"&gt;/yr&lt;/span&gt;&lt;/td&gt;&lt;td&gt;${tierPill(c.rate_tier)}&lt;/td&gt;&lt;td&gt;${pipeline}&lt;/td&gt;&lt;td&gt;${dealPill(c.has_active_deal)}&lt;/td&gt;&lt;td class="mono"&gt;${c.deal_number?c.deal_number:"&lt;span class='small'&gt;—&lt;/span&gt;"}&lt;/td&gt;&lt;td class="mono"&gt;${c.vin?c.vin:"&lt;span class='small'&gt;—&lt;/span&gt;"}&lt;/td&gt;&lt;/tr&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}).join("") + `&lt;/tbody&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>table.innerHTML = headers + bodyHTML; footerFor(paged.total,"customers",paged.totalPages);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>table.querySelectorAll("tbody tr").forEach(tr=&gt;{ tr.addEventListener("click", ()=&gt;{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>} else if(view==="vehicles"){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>wrap.classList.remove("matrixWrap");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>rows = filterVehicles(DB.vehicles); paged = paginate(rows);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>headers = `&lt;thead&gt;&lt;tr&gt;&lt;th style="width:84px"&gt;ID&lt;/th&gt;&lt;th style="min-width:220px"&gt;Vehicle&lt;/th&gt;&lt;th style="width:220px"&gt;VIN&lt;/th&gt;&lt;th style="width:120px"&gt;Plate&lt;/th&gt;&lt;th style="width:140px"&gt;Deal&lt;/th&gt;&lt;th style="width:140px"&gt;Ends&lt;/th&gt;&lt;th style="width:140px"&gt;Location&lt;/th&gt;&lt;th style="width:120px"&gt;Switches&lt;/th&gt;&lt;th style="width:190px"&gt;Insurance daily&lt;/th&gt;&lt;th style="width:110px"&gt;Tier&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>bodyHTML = `&lt;tbody&gt;` + paged.slice.map(v=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const dealStatus=v.has_active_deal?"active":(v.last_driver_customer_id?"ended":"none");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const dealP=dealStatus==="active"?`&lt;span class="pill good"&gt;&lt;span class="dot"&gt;&lt;/span&gt;Active&lt;/span&gt;`:dealStatus==="ended"?`&lt;span class="pill warn"&gt;&lt;span class="dot"&gt;&lt;/span&gt;Ended&lt;/span&gt;`:`&lt;span class="pill"&gt;&lt;span class="dot"&gt;&lt;/span&gt;None&lt;/span&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const endsSoon=v.has_active_deal &amp;&amp; dealEndsSoon(v.deal_end_date), endCell=v.deal_end_date?`&lt;span class="mono"&gt;${v.deal_end_date}&lt;/span&gt; ${endsSoon?`&lt;span class="pill warn" style="margin-left:6px"&gt;&lt;span class="dot"&gt;&lt;/span&gt;≤30d&lt;/span&gt;`:""}`:`&lt;span class="small"&gt;—&lt;/span&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const switchesP=(v.drivers_switched_ytd&gt;=3)?`&lt;span class="pill bad"&gt;&lt;span class="dot"&gt;&lt;/span&gt;${v.drivers_switched_ytd}&lt;/span&gt;`:`&lt;span class="pill"&gt;&lt;span class="dot"&gt;&lt;/span&gt;${v.drivers_switched_ytd}&lt;/span&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>return `&lt;tr class="${selectedKey===v.vin?"selected":""}" data-key="${v.vin}"&gt;&lt;td class="mono"&gt;${v.id}&lt;/td&gt;&lt;td&gt;${escapeHTML(v.type_make_model)}&lt;/td&gt;&lt;td class="mono"&gt;${v.vin}&lt;/td&gt;&lt;td class="mono"&gt;${v.plate}&lt;/td&gt;&lt;td&gt;${dealP}&lt;/td&gt;&lt;td&gt;${endCell}&lt;/td&gt;&lt;td&gt;${escapeHTML(v.vehicle_location)}&lt;/td&gt;&lt;td&gt;${switchesP}&lt;/td&gt;&lt;td&gt;${money2(v.insurance_daily_rate)} &lt;span class="small"&gt;/day&lt;/span&gt; ${ratePill(v.insurance_rate_source)}&lt;/td&gt;&lt;td&gt;${tierPill(rateTier(v.insurance_annual_rate))}&lt;/td&gt;&lt;/tr&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}).join("") + `&lt;/tbody&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>table.innerHTML = headers + bodyHTML; footerFor(paged.total,"vehicles",paged.totalPages);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>table.querySelectorAll("tbody tr").forEach(tr=&gt;{ tr.addEventListener("click", ()=&gt;{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>} else if(view==="opportunities"){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>wrap.classList.remove("matrixWrap");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let oppRows = OPPS;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(oppSection==="vacant") oppRows = oppRows.filter(o=&gt;o.kind==="Vacant");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(oppSection==="expiring") oppRows = oppRows.filter(o=&gt;o.kind.startsWith("Expiring"));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(oppSection==="hightier") oppRows = oppRows.filter(o=&gt;o.kind.startsWith("High-tier"));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(tierFilter!=="all") oppRows = oppRows.filter(o =&gt; (o.lead_tier || "High") === tierFilter);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const q=getSearchTerm(); if(q) oppRows = oppRows.filter(o=&gt; [o.kind,o.vehicle,o.vin,o.location,o.lead_name||"",o.lead_id||"",o.lead_tier||"",o.current_tier].join(" ").toLowerCase().includes(q));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>paged = paginate(oppRows);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>headers = `&lt;thead&gt;&lt;tr&gt;&lt;th style="width:160px"&gt;Type&lt;/th&gt;&lt;th&gt;Vehicle&lt;/th&gt;&lt;th style="width:220px"&gt;VIN&lt;/th&gt;&lt;th style="width:140px"&gt;Ends&lt;/th&gt;&lt;th style="width:130px"&gt;Current /day&lt;/th&gt;&lt;th style="width:110px"&gt;Current tier&lt;/th&gt;&lt;th style="width:160px"&gt;Suggested lead&lt;/th&gt;&lt;th style="width:100px"&gt;Lead tier&lt;/th&gt;&lt;th style="width:140px"&gt;Est. save /day&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>bodyHTML = `&lt;tbody&gt;` + paged.slice.map(o=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const typeP = o.kind==="Vacant" ? `&lt;span class="pill bad"&gt;&lt;span class="dot"&gt;&lt;/span&gt;Vacant&lt;/span&gt;` : o.kind.startsWith("Expiring") ? `&lt;span class="pill warn"&gt;&lt;span class="dot"&gt;&lt;/span&gt;Expiring&lt;/span&gt;` : `&lt;span class="pill"&gt;&lt;span class="dot"&gt;&lt;/span&gt;High-tier&lt;/span&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const endCell = o.deal_end ? `&lt;span class="mono"&gt;${o.deal_end}&lt;/span&gt;` : `&lt;span class="small"&gt;—&lt;/span&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const leadName = o.lead_name ? escapeHTML(o.lead_name) : "&lt;span class='small'&gt;No low/med lead left&lt;/span&gt;", leadTier = o.lead_tier ? tierPill(o.lead_tier) : "&lt;span class='small'&gt;—&lt;/span&gt;";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const saveDay = (o.savings_daily!=null) ? money2(o.savings_daily) : "&lt;span class='small'&gt;—&lt;/span&gt;";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>return `&lt;tr class="${selectedKey===o.vin?"selected":""}" data-key="${o.vin}"&gt;&lt;td&gt;${typeP}&lt;/td&gt;&lt;td&gt;${escapeHTML(o.vehicle)}&lt;div class="small"&gt;${escapeHTML(o.location)}&lt;/div&gt;&lt;/td&gt;&lt;td class="mono"&gt;${o.vin}&lt;/td&gt;&lt;td&gt;${endCell}&lt;/td&gt;&lt;td&gt;${money2(o.current_daily)} &lt;span class="small"&gt;/day&lt;/span&gt;&lt;/td&gt;&lt;td&gt;${tierPill(o.current_tier)}&lt;/td&gt;&lt;td&gt;${leadName}&lt;div class="small mono"&gt;${o.lead_id || ""}&lt;/div&gt;&lt;/td&gt;&lt;td&gt;${leadTier}&lt;/td&gt;&lt;td&gt;${saveDay}&lt;/td&gt;&lt;/tr&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}).join("") + `&lt;/tbody&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>table.innerHTML = headers + bodyHTML; footerFor(paged.total,"opportunities",paged.totalPages);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>table.querySelectorAll("tbody tr").forEach(tr=&gt;{ tr.addEventListener("click", ()=&gt;{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Daily Spend Matrix with sticky cols</p>
+<p class="p1"><span class="Apple-converted-space">    </span>wrap.classList.add("matrixWrap");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const range = dailyRange || getDefaultDailyRange(), dates = listDatesInclusive(range.start, range.end);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>rows = filterVehicles(DB.vehicles);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const q=getSearchTerm(); if(q) rows = rows.filter(v=&gt; [v.vin,v.type_make_model,v.plate,v.deal_number||"",v.vehicle_location].join(" ").toLowerCase().includes(q));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>paged = paginate(rows);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const dateHeaders = dates.map(d=&gt;`&lt;th class="mono" style="width: 110px"&gt;${d.slice(5,7)}-${d.slice(8,10)}&lt;/th&gt;`).join("");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>headers = `&lt;thead&gt;&lt;tr&gt;&lt;th style="width: 66px"&gt;Plot&lt;/th&gt;&lt;th style="width: 220px"&gt;Vehicle&lt;/th&gt;&lt;th style="width: 220px"&gt;VIN&lt;/th&gt;&lt;th style="width: 110px"&gt;Tier&lt;/th&gt;${dateHeaders}&lt;/tr&gt;&lt;/thead&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>bodyHTML = `&lt;tbody&gt;` + paged.slice.map(v=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const t = rateTier(v.insurance_annual_rate);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const rowCells = dates.map(dt=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const rec = v.daily_map_120d ? v.daily_map_120d[dt] : null;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const daily = rec ? rec.daily : v.insurance_daily_rate, dl = rec ? rec.dl : null;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const cls = (!dl &amp;&amp; v.insurance_rate_source==="base") ? "vacant" : (t==="High" ? "high" : "");</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return `&lt;td&gt;&lt;div class="cell ${cls}"&gt;&lt;div class="p"&gt;${money2(daily)}&lt;/div&gt;&lt;div class="dl"&gt;${escapeHTML(fmtShortDL(dl))}&lt;/div&gt;&lt;/div&gt;&lt;/td&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}).join("");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>return `&lt;tr class="${selectedKey===v.vin?"selected":""}" data-key="${v.vin}"&gt;&lt;td&gt;&lt;button class="btn secondary miniBtn" data-plot="${v.vin}"&gt;Plot&lt;/button&gt;&lt;/td&gt;&lt;td&gt;${escapeHTML(v.type_make_model)}&lt;div class="small"&gt;${escapeHTML(v.vehicle_location)}&lt;/div&gt;&lt;/td&gt;&lt;td class="mono"&gt;${v.vin}&lt;/td&gt;&lt;td&gt;${tierPill(t)}&lt;/td&gt;${rowCells}&lt;/tr&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}).join("") + `&lt;/tbody&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>table.innerHTML = headers + bodyHTML; footerFor(paged.total, "vehicles", paged.totalPages);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>table.querySelectorAll("tbody tr").forEach(tr=&gt;{ tr.addEventListener("click", (e)=&gt;{ if(e.target &amp;&amp; e.target.getAttribute &amp;&amp; e.target.getAttribute("data-plot")) return; selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });</p>
+<p class="p1"><span class="Apple-converted-space">    </span>table.querySelectorAll("[data-plot]").forEach(btn=&gt;{ btn.addEventListener("click", (e)=&gt;{ e.stopPropagation(); openPlotModal(btn.getAttribute("data-plot")); }); });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">// ---------- Restored &amp; Enhanced Details Pane ----------</p>
+<p class="p1">function renderDetail(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const pane=el("detail");</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!selectedKey){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>pane.innerHTML = `&lt;div class="card"&gt;&lt;h2&gt;Details&lt;/h2&gt;&lt;div class="muted"&gt;Click a row to inspect the record.&lt;/div&gt;&lt;div class="divider"&gt;&lt;/div&gt;&lt;div class="small"&gt;In &lt;b&gt;Daily Spend&lt;/b&gt;, use "Plot" to open a time series. Use &lt;b&gt;Opportunities&lt;/b&gt; to match low-rate leads to vacant/expiring vehicles and see estimated savings.&lt;/div&gt;&lt;/div&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(view==="customers"){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const c=DB.customers.find(x=&gt;x.id===selectedKey); if(!c){selectedKey=null; return renderDetail();}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const vehicle = c.vin ? DB.index.vehiclesByVIN[c.vin] : null;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>pane.innerHTML = `&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;h2&gt;${escapeHTML(c.name)}&lt;/h2&gt;&lt;div class="muted"&gt;Customer &lt;span class="mono"&gt;${c.id}&lt;/span&gt; • Tier ${tierPill(c.rate_tier)}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="kv"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="k"&gt;DL #&lt;/div&gt;&lt;div class="v mono"&gt;${c.dl_number}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="k"&gt;UW daily rate&lt;/div&gt;&lt;div class="v"&gt;${money2(c.insurance_daily_rate)} / day&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="k"&gt;Pipeline stage&lt;/div&gt;&lt;div class="v"&gt;${c.has_active_deal ? "—" : escapeHTML(c.lead_stage||"Lead")}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="k"&gt;Active deal&lt;/div&gt;&lt;div class="v"&gt;${dealPill(c.has_active_deal)}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="k"&gt;VIN&lt;/div&gt;&lt;div class="v mono"&gt;${c.vin || "—"}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>${vehicle ? `&lt;div class="divider"&gt;&lt;/div&gt;&lt;div class="small"&gt;Linked vehicle&lt;/div&gt;&lt;div style="margin-top:8px"&gt;&lt;span class="linkish" id="jumpVehicle"&gt;${escapeHTML(vehicle.type_make_model)}&lt;/span&gt;&lt;div class="muted mono" style="margin-top:4px"&gt;${vehicle.vin}&lt;/div&gt;&lt;/div&gt;` : `&lt;div class="divider"&gt;&lt;/div&gt;&lt;div class="small"&gt;No linked vehicle. Match this lead to a vacant or expiring vehicle to realize savings.&lt;/div&gt;`}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const jump=document.getElementById("jumpVehicle");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(jump) jump.addEventListener("click", ()=&gt;{ view="vehicles"; setActiveTab(); selectedKey=vehicle.vin; page=1; renderTierStrip(); renderTable(); renderDetail(); });</p>
+<p class="p2"><span class="Apple-converted-space">  </span></p>
+<p class="p1"><span class="Apple-converted-space">  </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Handling Vehicles &amp; Opportunities</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const v=DB.index.vehiclesByVIN[selectedKey]; if(!v){selectedKey=null; return renderDetail();}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const current=v.current_driver_customer_id ? DB.index.customersById[v.current_driver_customer_id] : null;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const last=v.last_driver_customer_id ? DB.index.customersById[v.last_driver_customer_id] : null;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const dealStatus=v.has_active_deal ? "Active" : (v.last_driver_customer_id ? "Ended" : "None");</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Build Match Candidates dropdown</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const candidates = DB.customers.filter(c=&gt;!c.has_active_deal &amp;&amp; c.rate_tier!=="High").sort((a,b)=&gt;a.insurance_annual_rate-b.insurance_annual_rate).slice(0, 30);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const options = [`&lt;option value=""&gt;Select lead to simulate match…&lt;/option&gt;`].concat(candidates.map(c=&gt;`&lt;option value="${c.id}"&gt;${escapeHTML(c.name)} (${c.id}) • ${c.rate_tier} • ${money2(c.insurance_daily_rate)}/day&lt;/option&gt;`)).join("");</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>pane.innerHTML = `&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;h2&gt;${escapeHTML(v.type_make_model)}&lt;/h2&gt;&lt;div class="muted"&gt;VIN &lt;span class="mono"&gt;${v.vin}&lt;/span&gt; • Tier ${tierPill(rateTier(v.insurance_annual_rate))}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="kv"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="k"&gt;Insurance daily&lt;/div&gt;&lt;div class="v"&gt;${money2(v.insurance_daily_rate)} / day ${ratePill(v.insurance_rate_source)}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="k"&gt;Deal status&lt;/div&gt;&lt;div class="v"&gt;${dealStatus}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="k"&gt;Location&lt;/div&gt;&lt;div class="v"&gt;${escapeHTML(v.vehicle_location)}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="k"&gt;DL changes (120d)&lt;/div&gt;&lt;div class="v"&gt;${v.dl_changes_120d || 0}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="divider"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>${current ? `&lt;div class="small"&gt;Current driver&lt;/div&gt;&lt;div style="margin-top:8px"&gt;&lt;span class="linkish" id="jumpCustomer"&gt;${escapeHTML(current.name)}&lt;/span&gt;&lt;div class="muted mono" style="margin-top:4px"&gt;${current.id} • ${tierPill(current.rate_tier)}&lt;/div&gt;&lt;/div&gt;` : last ? `&lt;div class="small"&gt;Last driver&lt;/div&gt;&lt;div style="margin-top:8px"&gt;&lt;span class="linkish" id="jumpCustomer"&gt;${escapeHTML(last.name)}&lt;/span&gt;&lt;div class="muted mono" style="margin-top:4px"&gt;${last.id} • ${tierPill(last.rate_tier)}&lt;/div&gt;&lt;/div&gt;` : `&lt;div class="small"&gt;&lt;b&gt;Vacant&lt;/b&gt; (no driver history) — paying base rate daily.&lt;/div&gt;`}</p>
+<p class="p2"><span class="Apple-converted-space">      </span></p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="divider"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="small"&gt;&lt;b&gt;Match simulator&lt;/b&gt; — predict savings&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div style="margin-top:8px"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;select id="matchLead" style="width:100%; min-width:0"&gt;${options}&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="matchOut" class="small" style="margin-top:8px"&gt;Select a lead to project daily rate.&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="canvasWrap" style="margin-top:14px"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="small" style="display:flex; justify-content:space-between; align-items:center;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;b&gt;Rate History (Last 60 days)&lt;/b&gt; &lt;button class="btn secondary miniBtn" id="openPlot2"&gt;Expand&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;canvas id="rateChart" width="360" height="90" style="margin-top:8px"&gt;&lt;/canvas&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;`;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Jump interactions</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const jump=document.getElementById("jumpCustomer");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(jump){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const target=current || last;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>jump.addEventListener("click", ()=&gt;{ view="customers"; setActiveTab(); selectedKey=target.id; page=1; renderTierStrip(); renderTable(); renderDetail(); });</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Match Simulator Interaction</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const sel=document.getElementById("matchLead");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(sel){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>sel.addEventListener("change", ()=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const id=sel.value, out=el("matchOut");</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if(!id){ out.textContent="Select a lead to project daily rate."; return; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const c=DB.index.customersById[id], projected=c.insurance_daily_rate, save=Math.max(0, v.insurance_daily_rate - projected);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>out.innerHTML = `Projected daily: &lt;b&gt;${money2(projected)}&lt;/b&gt; • Current: &lt;b&gt;${money2(v.insurance_daily_rate)}&lt;/b&gt;&lt;br/&gt;Est. savings: &lt;b&gt;&lt;span style="color:var(--good)"&gt;${money2(save)}&lt;/span&gt;&lt;/b&gt;/day • &lt;b&gt;${money(Math.round(save*30))}&lt;/b&gt; over 30 days.`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>});</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Plot Interactions</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const b=document.getElementById("openPlot2");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(b) b.addEventListener("click", ()=&gt; openPlotModal(v.vin));</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Draw mini sparkline</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const c=document.getElementById("rateChart");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(c &amp;&amp; v.rate_history_120d) {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// just take last 60 days for mini chart to fit the pane better</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const slice = v.rate_history_120d.slice(-60).map(x=&gt;({y: x.daily, dlChanged: x.switched}));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>drawLineChart(c, slice);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">// ---------- Initialization ----------</p>
+<p class="p1">function setActiveTab(){ el("tabCustomers").classList.toggle("active", view==="customers"); el("tabVehicles").classList.toggle("active", view==="vehicles"); el("tabOpp").classList.toggle("active", view==="opportunities"); el("tabDaily").classList.toggle("active", view==="daily"); }</p>
+<p class="p1">function populateLocationFilter(){ const s=el("filterLocation"), uniq=Array.from(new Set(DB.vehicles.map(v=&gt;v.vehicle_location))).sort(); s.innerHTML = `&lt;option value="all"&gt;Location: All&lt;/option&gt;` + uniq.map(v=&gt;`&lt;option value="${v}"&gt;${v}&lt;/option&gt;`).join(""); }</p>
+<p class="p1">function exportJSON(){ const payload={meta:DB.meta, customers:DB.customers, vehicles:DB.vehicles}, blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}), a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`fleet_poc_mockdb_seed_${DB.meta.seed}.json`; a.click(); URL.revokeObjectURL(a.href); toast("Exported JSON (customers + vehicles)."); }</p>
+<p class="p1">function regenerate(){ const seed=Math.floor(Math.random()*1e9); DB=generateMockDB(seed); OPPS=buildOpportunities(); page=1; selectedKey=null; tierFilter="all"; oppSection="all"; dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange); toast("Regenerated mock dataset."); refreshAll(); }</p>
+<p class="p1">function refreshAll(){ renderKPIs(); renderAlerts(); renderTierStrip(); populateLocationFilter(); renderTable(); renderDetail(); }</p>
+<p class="p2"><br></p>
+<p class="p1">function init(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const seed=Math.floor(Date.now()%1e9); DB=generateMockDB(seed); OPPS=buildOpportunities(); dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("tabCustomers").addEventListener("click", ()=&gt;{view="customers"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("tabVehicles").addEventListener("click", ()=&gt;{view="vehicles"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("tabOpp").addEventListener("click", ()=&gt;{view="opportunities"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("tabDaily").addEventListener("click", ()=&gt;{view="daily"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>["search","filterDeal","filterLocation"].forEach(id=&gt;{ el(id).addEventListener("input", ()=&gt;{page=1; selectedKey=null; renderTable(); renderDetail();}); el(id).addEventListener("change", ()=&gt;{page=1; selectedKey=null; renderTable(); renderDetail();}); });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("prevPage").addEventListener("click", ()=&gt;{page--; renderTable();}); el("nextPage").addEventListener("click", ()=&gt;{page++; renderTable();});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("btnExport").addEventListener("click", exportJSON); el("btnRegenerate").addEventListener("click", regenerate);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("rangePreset").addEventListener("change", ()=&gt;{ const preset=el("rangePreset").value; if(preset==="custom") return; dailyRange = computeRangeFromPreset(preset); setDailyControlsFromRange(dailyRange); page=1; selectedKey=null; if(view==="daily"){ renderTable(); renderDetail(); } });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("btnApplyRange").addEventListener("click", ()=&gt;{ dailyRange = computeRangeFromPreset(el("rangePreset").value); page=1; selectedKey=null; if(view==="daily"){ renderTable(); renderDetail(); toast(`Applied range ${dailyRange.start} → ${dailyRange.end}`); } });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("btnExportCSV").addEventListener("click", exportDailyCSV);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el("modalClose").addEventListener("click", closePlotModal); el("modalBackdrop").addEventListener("click", (e)=&gt;{ if(e.target===el("modalBackdrop")) closePlotModal(); }); document.addEventListener("keydown",(e)=&gt;{ if(e.key==="Escape") closePlotModal(); });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>setActiveTab(); refreshAll();</p>
+<p class="p1">}</p>
+<p class="p1">init();</p>
+<p class="p1">&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
