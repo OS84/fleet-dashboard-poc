@@ -118,7 +118,7 @@
     .legend{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px}
     .legend span{color:var(--muted); font-size: 12px}
 
-    .toast{position: fixed; right: 16px; bottom: 16px; background: rgba(18,26,51,.92); border: 1px solid rgba(231,236,255,.16); border-radius: 14px; box-shadow: var(--shadow); padding: 10px 12px; color: var(--text); font-size: 13px; display:none; max-width: 520px; z-index: 100;}
+    .toast{position: fixed; right: 16px; bottom: 16px; background: rgba(18,26,51,.92); border: 1px solid rgba(231,236,255,.16); border-radius: 14px; box-shadow: var(--shadow); padding: 10px 12px; color: var(--text); font-size: 13px; display:none; max-width: 520px; z-index: 200;}
 
     /* Opportunities header (left panel) */
     .opHeader{display:flex; gap:10px; align-items:center; justify-content:space-between; padding: 10px 12px; border-bottom: 1px solid rgba(231,236,255,.10); background: rgba(18,26,51,.35);}
@@ -145,18 +145,18 @@
 
     /* Modal */
     .modalBackdrop{
-      position: fixed; inset:0; background: rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; padding: 18px; z-index: 50;
+      position: fixed; inset:0; background: rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; padding: 18px; z-index: 100; backdrop-filter: blur(4px);
     }
     .modal{
-      width: min(980px, 96vw); border: 1px solid rgba(231,236,255,.16); background: rgba(18,26,51,.95); border-radius: 18px; box-shadow: var(--shadow); overflow:hidden;
+      width: min(980px, 96vw); border: 1px solid rgba(231,236,255,.16); background: rgba(15,23,48,.95); border-radius: 18px; box-shadow: var(--shadow); overflow:hidden;
     }
     .modalHeader{
-      display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding: 12px 14px; border-bottom: 1px solid rgba(231,236,255,.12); background: rgba(15,23,48,.85);
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding: 16px 20px; border-bottom: 1px solid rgba(231,236,255,.12); background: rgba(18,26,51,.95);
     }
-    .modalHeader .t{font-size: 14px}
-    .modalHeader .s{font-size: 12px; color: var(--muted); margin-top:4px}
-    .modalBody{padding: 12px 14px;}
-    .modalBody canvas{height: 220px}
+    .modalHeader .t{font-size: 18px; font-weight: 600;}
+    .modalHeader .s{font-size: 13px; color: var(--muted); margin-top:4px}
+    .modalBody{padding: 20px; max-height: 70vh; overflow-y: auto;}
+    .modalBody canvas{height: 180px; width: 100%; background: rgba(18,26,51,.35); border: 1px solid rgba(231,236,255,.12); border-radius: 12px; padding: 10px;}
 
     /* Upload Modal */
     .uploadBackdrop{
@@ -188,16 +188,15 @@
   <div class="app">
     <header>
       <div class="title">
-        <h1>Fleet / Customers / Insurance — Dashboard</h1>
+        <h1>Fleet & Insurance Dashboard</h1>
         <div class="sub">
-          Constraints enforced: <b>All vehicles have insurance at all times</b>. Rate source is always:
-          <b>driver rate (active deal)</b> → <b>last driver rate (ended deal)</b> → <b>base rate (no driver history)</b>.
-          Daily Spend matrix with sticky columns and Match Simulator in the details pane.
+          Data-driven operations from uploaded CSV snapshots.
+          Rate source: <b>driver rate (active deal)</b> → <b>last driver rate (ended deal)</b> → <b>base rate $8,200/yr (no driver history)</b>.
         </div>
         <div class="chiprow">
-          <div class="chip">Production data: loaded from CSV</div>
-          <div class="chip">Daily matrix: rate + DL per VIN per day</div>
-          <div class="chip">Match Simulator enabled</div>
+          <div class="chip">Daily rate = Annual / 365</div>
+          <div class="chip">Daily matrix + Match Simulator</div>
+          <div class="chip">Snapshot extrapolated over 120 days</div>
         </div>
       </div>
       <div class="row">
