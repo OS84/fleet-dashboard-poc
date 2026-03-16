@@ -244,6 +244,9 @@
         <select id="filterLocation">
           <option value="all">Location: All</option>
         </select>
+        <label style="display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--muted)">Base&nbsp;rate&nbsp;$/yr
+          <input type="number" id="baseRateInput" value="8200" min="0" step="100" style="width:90px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:13px" />
+        </label>
 
         <div class="matrixActions" id="dailyControls" style="display:none">
           <select id="rangePreset" style="min-width: 190px">
@@ -321,9 +324,10 @@ function diamondPill(expISO){const d=new Date(expISO), now=today0(), diff=Math.r
 function dealEndsSoon(endISO){ if(!endISO) return false; const end=new Date(endISO), now=today0(); const diff=Math.round((end-now)/86400000); return diff>=0 && diff<=30; }
 
 // ---------- CSV Parsing & Production Data Loading ----------
-const BASE_RATE_ANNUAL=8200;
+let BASE_RATE_ANNUAL=8200;
 const STORAGE_KEY_CUST="fleet_csv_customers";
 const STORAGE_KEY_VEH="fleet_csv_vehicles";
+const STORAGE_KEY_BASE_RATE="fleet_base_rate_annual";
 
 // Detect delimiter: tab or comma
 function detectDelimiter(text){
@@ -578,6 +582,8 @@ function loadCSVsFromStorage(){
 function clearCSVsFromStorage(){
   localStorage.removeItem(STORAGE_KEY_CUST); localStorage.removeItem(STORAGE_KEY_VEH);
 }
+function saveBaseRate(val){ try{ localStorage.setItem(STORAGE_KEY_BASE_RATE,String(val)); }catch(e){} }
+function loadBaseRate(){ const v=localStorage.getItem(STORAGE_KEY_BASE_RATE); return v?parseFloat(v):8200; }
 
 // --- Upload UI wiring ---
 let pendingCustText=null, pendingVehText=null;
@@ -1032,7 +1038,33 @@ function populateLocationFilter(){ const s=el("filterLocation"), uniq=Array.from
 function exportJSON(){ const payload={meta:DB.meta, customers:DB.customers, vehicles:DB.vehicles}, blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}), a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`fleet_dashboard_export.json`; a.click(); URL.revokeObjectURL(a.href); toast("Exported JSON (customers + vehicles)."); }
 function refreshAll(){ renderKPIs(); renderAlerts(); renderTierStrip(); populateLocationFilter(); renderTable(); renderDetail(); updateDataChip(); }
 
+function rebuildFromStorage(){
+  const stored=loadCSVsFromStorage();
+  if(!stored)return false;
+  try{
+    const custRows=parseCSV(stored.custText);
+    const vehRows=parseCSV(stored.vehText);
+    DB=buildDB(custRows,vehRows);
+    OPPS=buildOpportunities(); dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange);
+    refreshAll();
+    return true;
+  }catch(e){ console.warn("Rebuild failed:",e); return false; }
+}
+
 function init(){
+  // Load saved base rate
+  BASE_RATE_ANNUAL=loadBaseRate();
+  el("baseRateInput").value=BASE_RATE_ANNUAL;
+
+  // Wire base rate input
+  el("baseRateInput").addEventListener("change", function(){
+    const v=parseFloat(this.value);
+    if(isNaN(v)||v<0){ this.value=BASE_RATE_ANNUAL; return; }
+    BASE_RATE_ANNUAL=v;
+    saveBaseRate(v);
+    if(DB){ rebuildFromStorage(); toast("Base rate updated to $"+v.toLocaleString()+"/yr"); }
+  });
+
   // Try to load from localStorage
   const stored=loadCSVsFromStorage();
   if(stored){
