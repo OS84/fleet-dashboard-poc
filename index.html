@@ -1,13 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Fleet / Customers / Insurance MVP</title>
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
+  <title>Fleet / Customers / Insurance POC (V4 - Final)</title>
   <style>
     :root{
       --bg:#0b1020; --text:#e7ecff; --muted:#aeb9e6; --line:rgba(231,236,255,.12);
@@ -27,29 +23,40 @@
     header{display:flex; gap:14px; align-items:flex-start; justify-content:space-between; padding: 10px 4px 18px;}
     .title h1{font-size:22px; margin:0 0 4px; letter-spacing:.2px;}
     .title .sub{color:var(--muted); font-size:13px; line-height:1.4; max-width: 1080px;}
-    
-    .assumptions-panel {
-      border: 1px solid rgba(106,228,255,.25); background: rgba(106,228,255,.05); 
-      border-radius: 12px; padding: 12px 16px; margin-top: 12px; font-size: 13px;
-      line-height: 1.5; color: var(--muted);
-    }
-    .assumptions-panel strong { color: var(--text); }
-
+    .chiprow{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
+    .chip{border:1px solid var(--line); background:rgba(18,26,51,.65); padding:6px 10px; border-radius:999px; color:var(--muted); font-size:12px; backdrop-filter: blur(6px);}
     .btn{border:1px solid var(--line); background: linear-gradient(180deg, rgba(18,26,51,.9), rgba(15,23,48,.9)); color:var(--text); padding:10px 12px; border-radius:12px; cursor:pointer; box-shadow: var(--shadow); transition: transform .08s ease, border-color .2s ease; font-size:13px;}
     .btn:hover{transform: translateY(-1px); border-color: rgba(231,236,255,.22)}
     .btn.secondary{box-shadow:none; background:rgba(18,26,51,.5);}
-    .btn:disabled{opacity: 0.5; cursor: not-allowed; border-color: var(--line);}
     .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    
-    .kpis{display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin: 16px 0;}
+    .kpis{display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin: 10px 0 12px;}
     @media (max-width: 1180px){ .kpis{grid-template-columns: 1fr 1fr} }
     .card{
       border:1px solid var(--line); background: linear-gradient(180deg, rgba(18,26,51,.9), rgba(15,23,48,.85));
       border-radius: var(--radius2); box-shadow: var(--shadow); padding: 14px 14px 12px; position:relative; overflow:hidden; min-height: 92px;
     }
+    .card:before{
+      content:""; position:absolute; inset:-1px;
+      background: radial-gradient(520px 220px at 20% 10%, rgba(106,228,255,.10), transparent 55%),
+                  radial-gradient(520px 220px at 90% 0%, rgba(155,140,255,.10), transparent 55%);
+      pointer-events:none;
+    }
+    .card > *{position:relative}
     .kpiLabel{color:var(--muted); font-size:12px}
     .kpiValue{font-size:22px; margin-top:6px; letter-spacing:.2px}
-    
+    .kpiHint{color:var(--muted); font-size:12px; margin-top:6px; line-height:1.35}
+    .kpiHint strong{color:var(--text); font-weight:600}
+    .kpiRow{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:6px}
+    .kpiMini{display:flex; gap:8px; align-items:baseline; border: 1px solid rgba(231,236,255,.12); background: rgba(18,26,51,.35); padding: 6px 10px; border-radius: 12px; color: var(--muted); font-size: 12px;}
+    .kpiMini b{color:var(--text); font-size:13px}
+    .alerts{display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; margin: 0 0 14px;}
+    @media (max-width: 1180px){ .alerts{grid-template-columns: 1fr} }
+    .alert{border:1px solid rgba(231,236,255,.14); background: rgba(18,26,51,.45); border-radius: 18px; padding: 12px 14px; box-shadow: 0 10px 25px rgba(0,0,0,.25);}
+    .alert .t{font-size:12px; color: var(--muted)}
+    .alert .v{font-size:16px; margin-top:6px}
+    .alert .v b{font-weight:700}
+    .alert .s{font-size:12px; color: var(--muted); margin-top:6px; line-height:1.35}
+
     .tabs{display:flex; gap:8px; align-items:center; padding:6px; background:rgba(18,26,51,.5); border:1px solid var(--line); border-radius:999px; width: fit-content; box-shadow: 0 8px 20px rgba(0,0,0,.25);}
     .tab{padding: 9px 12px; border-radius:999px; font-size:13px; color: var(--muted); cursor:pointer; border:1px solid transparent; user-select:none;}
     .tab.active{color:var(--text); background: rgba(106,228,255,.10); border-color: rgba(106,228,255,.25);}
@@ -57,9 +64,10 @@
     .toolbar{display:flex; gap:10px; align-items:flex-start; justify-content:space-between; margin: 14px 0 10px; flex-wrap:wrap;}
     .filters{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
     input[type="text"], input[type="date"], select{
-      background: rgba(18,26,51,.7); border:1px solid var(--line); color: var(--text); padding: 10px 12px; border-radius: 12px; outline:none; font-size: 13px; min-width: 200px;
+      background: rgba(18,26,51,.7); border:1px solid var(--line); color: var(--text); padding: 10px 12px; border-radius: 12px; outline:none; font-size: 13px; min-width: 250px;
     }
-    
+    input[type="date"]{min-width: 150px}
+    select{min-width: 190px}
     .mono{font-family: var(--mono)}
     .pill{display:inline-flex; align-items:center; gap:6px; padding: 4px 9px; border-radius:999px; border:1px solid rgba(231,236,255,.16); background: rgba(18,26,51,.5); color: var(--muted); font-size: 12px; white-space:nowrap;}
     .dot{width:7px; height:7px; border-radius:99px; background: var(--muted); opacity:.9}
@@ -69,103 +77,213 @@
     .pill.warn .dot{background: var(--warn)}
     .pill.bad{border-color: rgba(255,92,122,.35); color: rgba(255,92,122,.95); background: rgba(255,92,122,.08)}
     .pill.bad .dot{background: var(--bad)}
+    .pill.tierLow{border-color: rgba(62,240,168,.35); color: rgba(62,240,168,.95); background: rgba(62,240,168,.08)}
+    .pill.tierLow .dot{background: var(--good)}
+    .pill.tierMed{border-color: rgba(255,209,102,.35); color: rgba(255,209,102,.95); background: rgba(255,209,102,.08)}
+    .pill.tierMed .dot{background: var(--warn)}
+    .pill.tierHigh{border-color: rgba(255,92,122,.35); color: rgba(255,92,122,.95); background: rgba(255,92,122,.08)}
+    .pill.tierHigh .dot{background: var(--bad)}
 
-    .main{display:block;} /* Full width layout */
+    .tierStrip{display:flex; gap:10px; flex-wrap:wrap; margin-top: 10px;}
+    .tierCard{border:1px solid rgba(231,236,255,.14); background: rgba(18,26,51,.35); border-radius: 16px; padding: 10px 12px; cursor:pointer; user-select:none;}
+    .tierCard .t{color: var(--muted); font-size:12px}
+    .tierCard .n{font-size:16px; margin-top:4px}
+    .tierCard.active{outline: 1px solid rgba(106,228,255,.35); background: rgba(106,228,255,.08);}
+
+    .main{display:grid; grid-template-columns: 1fr 430px; gap: 12px; align-items:start;}
+    @media (max-width: 1180px){ .main{grid-template-columns: 1fr} .detail{position:relative; top:0} }
     .tableCard{border:1px solid var(--line); background: rgba(15,23,48,.75); border-radius: var(--radius2); box-shadow: var(--shadow); overflow:hidden;}
     table{width:100%; border-collapse: separate; border-spacing: 0; font-size: 13px;}
     thead th{text-align:left; color: var(--muted); font-weight:600; padding: 12px 14px; border-bottom:1px solid var(--line); background: rgba(18,26,51,.95); position: sticky; top:0; z-index: 10;}
     tbody td{padding: 11px 14px; border-bottom:1px solid rgba(231,236,255,.08); vertical-align: top;}
     tbody tr{cursor:pointer; transition: background .12s ease;}
     tbody tr:hover{background: rgba(106,228,255,.06);}
-    
+    tbody tr.selected{background: rgba(155,140,255,.10); outline: 1px solid rgba(155,140,255,.22);}
     .tableFooter{display:flex; justify-content:space-between; align-items:center; padding: 10px 12px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); background: rgba(18,26,51,.35);}
     .pager{display:flex; gap:8px; align-items:center}
     .pager .btn{padding:8px 10px; border-radius: 10px; box-shadow:none}
 
-    /* Daily matrix Sticky Columns */
-    .matrixWrap{overflow:auto; max-height: 65vh; position: relative;}
+    .detail{position: sticky; top: 12px;}
+    .detail .card{padding: 14px;}
+    .detail h2{font-size: 16px; margin:0 0 6px;}
+    .detail .muted{color:var(--muted); font-size: 12px}
+    .kv{display:grid; grid-template-columns: 160px 1fr; gap: 8px 10px; margin-top: 12px; font-size: 13px;}
+    .k{color:var(--muted)}
+    .v{color:var(--text); word-break: break-word}
+    .divider{height:1px; background: var(--line); margin: 12px 0;}
+    .small{font-size: 12px; color: var(--muted); line-height: 1.35;}
+    .linkish{color: rgba(106,228,255,.95); cursor: pointer; text-decoration: underline; text-underline-offset: 2px;}
+    .canvasWrap{border: 1px solid rgba(231,236,255,.14); background: rgba(18,26,51,.35); border-radius: 16px; padding: 10px 10px 6px; margin-top: 10px;}
+    canvas{width:100%; height: 130px}
+    .legend{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px}
+    .legend span{color:var(--muted); font-size: 12px}
+
+    .toast{position: fixed; right: 16px; bottom: 16px; background: rgba(18,26,51,.92); border: 1px solid rgba(231,236,255,.16); border-radius: 14px; box-shadow: var(--shadow); padding: 10px 12px; color: var(--text); font-size: 13px; display:none; max-width: 520px; z-index: 200;}
+
+    /* Opportunities header (left panel) */
+    .opHeader{display:flex; gap:10px; align-items:center; justify-content:space-between; padding: 10px 12px; border-bottom: 1px solid rgba(231,236,255,.10); background: rgba(18,26,51,.35);}
+    .opHeader .h{font-size: 13px; color: var(--text)}
+    .opHeader .d{font-size: 12px; color: var(--muted)}
+
+    /* Daily matrix - Updated for Sticky Scrolling */
+    .matrixWrap{overflow:auto; max-height: 62vh; position: relative;}
     .matrix thead th{white-space:nowrap;}
     .matrix td,.matrix th{white-space:nowrap}
+    /* Sticky Setup for Matrix */
     .matrixWrap th:nth-child(1), .matrixWrap td:nth-child(1) { position: sticky; left: 0; z-index: 2; background: rgba(15,23,48,.95); border-right: 1px solid rgba(231,236,255,.12); }
-    .matrixWrap th:nth-child(2), .matrixWrap td:nth-child(2) { position: sticky; left: 160px; z-index: 2; background: rgba(15,23,48,.95); border-right: 1px solid rgba(231,236,255,.12); }
-    .matrixWrap thead th:nth-child(1), .matrixWrap thead th:nth-child(2) { z-index: 11; background: rgba(18,26,51,.95); }
+    .matrixWrap th:nth-child(2), .matrixWrap td:nth-child(2) { position: sticky; left: 66px; z-index: 2; background: rgba(15,23,48,.95); }
+    .matrixWrap th:nth-child(3), .matrixWrap td:nth-child(3) { position: sticky; left: 286px; z-index: 2; background: rgba(15,23,48,.95); border-right: 1px solid rgba(231,236,255,.12); }
+    .matrixWrap thead th:nth-child(1), .matrixWrap thead th:nth-child(2), .matrixWrap thead th:nth-child(3) { z-index: 11; background: rgba(18,26,51,.95); }
     
     .cell{display:flex; flex-direction:column; gap:2px; padding: 2px 0;}
     .cell .p{color: var(--text); font-variant-numeric: tabular-nums;}
     .cell .dl{color: var(--muted); font-size: 11px; font-family: var(--mono)}
     .cell.vacant .p{color: rgba(255,209,102,.95)}
+    .cell.high .p{color: rgba(255,92,122,.95)}
+    .matrixActions{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .miniBtn{padding:7px 10px; border-radius:10px; font-size:12px; box-shadow:none}
 
     /* Modal */
-    .modalBackdrop{ position: fixed; inset:0; background: rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; padding: 18px; z-index: 100; backdrop-filter: blur(4px); }
-    .modal{ width: min(800px, 96vw); border: 1px solid rgba(231,236,255,.16); background: rgba(15,23,48,.95); border-radius: 18px; box-shadow: var(--shadow); overflow:hidden; }
-    .modalHeader{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding: 16px 20px; border-bottom: 1px solid rgba(231,236,255,.12); background: rgba(18,26,51,.95); }
+    .modalBackdrop{
+      position: fixed; inset:0; background: rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; padding: 18px; z-index: 100; backdrop-filter: blur(4px);
+    }
+    .modal{
+      width: min(980px, 96vw); border: 1px solid rgba(231,236,255,.16); background: rgba(15,23,48,.95); border-radius: 18px; box-shadow: var(--shadow); overflow:hidden;
+    }
+    .modalHeader{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding: 16px 20px; border-bottom: 1px solid rgba(231,236,255,.12); background: rgba(18,26,51,.95);
+    }
     .modalHeader .t{font-size: 18px; font-weight: 600;}
     .modalHeader .s{font-size: 13px; color: var(--muted); margin-top:4px}
     .modalBody{padding: 20px; max-height: 70vh; overflow-y: auto;}
     .modalBody canvas{height: 180px; width: 100%; background: rgba(18,26,51,.35); border: 1px solid rgba(231,236,255,.12); border-radius: 12px; padding: 10px;}
-    
-    .kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;}
-    .kv-item { border: 1px solid rgba(231,236,255,.08); background: rgba(18,26,51,.5); padding: 12px; border-radius: 12px; }
-    .kv-item .k { font-size: 12px; color: var(--muted); margin-bottom: 4px;}
-    .kv-item .v { font-size: 15px; color: var(--text); }
 
-    .toast{position: fixed; right: 16px; bottom: 16px; background: rgba(18,26,51,.92); border: 1px solid rgba(231,236,255,.16); border-radius: 14px; box-shadow: var(--shadow); padding: 10px 12px; color: var(--text); font-size: 13px; display:none; z-index: 200;}
+    /* Upload Modal */
+    .uploadBackdrop{
+      position: fixed; inset:0; background: rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; padding: 18px; z-index: 60;
+    }
+    .uploadModal{
+      width: min(640px, 96vw); border: 1px solid rgba(231,236,255,.16); background: rgba(18,26,51,.97); border-radius: 18px; box-shadow: var(--shadow);
+    }
+    .uploadHeader{
+      display:flex; align-items:center; justify-content:space-between; padding: 14px 16px; border-bottom: 1px solid rgba(231,236,255,.12);
+    }
+    .uploadHeader h2{margin:0; font-size:16px}
+    .uploadBody{padding: 16px; display:flex; flex-direction:column; gap:16px}
+    .dropZone{
+      border: 2px dashed rgba(231,236,255,.2); border-radius: 14px; padding: 28px 16px; text-align:center;
+      color: var(--muted); font-size: 13px; cursor:pointer; transition: border-color .2s, background .2s;
+    }
+    .dropZone:hover, .dropZone.dragover{border-color: rgba(106,228,255,.5); background: rgba(106,228,255,.06)}
+    .dropZone.loaded{border-color: rgba(62,240,168,.4); background: rgba(62,240,168,.06)}
+    .dropZone .label{font-size:14px; font-weight:600; color:var(--text); margin-bottom:6px}
+    .dropZone .status{margin-top:8px; font-size:12px}
+    .dropZone .status.ok{color: var(--good)}
+    .dropZone .status.err{color: var(--bad)}
+    .uploadActions{display:flex; gap:10px; justify-content:flex-end; padding: 0 16px 16px}
+    .dataChip{display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:11px; border:1px solid rgba(62,240,168,.3); color:var(--good); background:rgba(62,240,168,.08)}
   </style>
 </head>
 <body>
   <div class="app">
     <header>
       <div class="title">
-        <h1>Fleet & Insurance MVP Dashboard</h1>
-        <div class="sub">Data-driven operations. 100% based on uploaded CSV snapshots.</div>
-        
-        <div class="assumptions-panel">
-          <strong>MVP Calculation Rules & Assumptions:</strong><br/>
-          • <strong>Base Rate:</strong> Any vehicle without an active driver, or a driver missing a UW rate, defaults to a fleet base rate of <strong>$8,200/yr</strong>.<br/>
-          • <strong>Daily Rate:</strong> Calculated strictly as <code>Annual Rate / 365</code>.<br/>
-          • <strong>Extrapolation:</strong> Because data is a single-day snapshot, the <em>Daily Spend</em> matrix assumes the vehicle's current driver/status has been constant for the last 30 days.
+        <h1>Fleet & Insurance Dashboard</h1>
+        <div class="sub">
+          Data-driven operations from uploaded CSV snapshots.
+          Rate source: <b>driver rate (active deal)</b> → <b>last driver rate (ended deal)</b> → <b>base rate $8,200/yr (no driver history)</b>.
+        </div>
+        <div class="chiprow">
+          <div class="chip">Daily rate = Annual / 365</div>
+          <div class="chip">Daily matrix + Match Simulator</div>
+          <div class="chip">Snapshot extrapolated over 120 days</div>
         </div>
       </div>
-      
       <div class="row">
-        <input type="file" id="uploadCustomers" accept=".csv" style="display: none;" />
-        <input type="file" id="uploadVehicles" accept=".csv" style="display: none;" />
-        
-        <button class="btn secondary" id="btnCustFile" onclick="document.getElementById('uploadCustomers').click()">1. Load Customers CSV</button>
-        <button class="btn secondary" id="btnVehFile" onclick="document.getElementById('uploadVehicles').click()">2. Load Vehicles CSV</button>
-        <button class="btn" id="btnRunDashboard" disabled style="background: var(--good); color: #0b1020; font-weight: bold;">Run Dashboard</button>
+        <button class="btn" id="btnUpload">Upload CSVs</button>
+        <button class="btn secondary" id="btnExport">Export JSON</button>
+        <span id="dataSourceChip"></span>
       </div>
     </header>
 
-    <section class="kpis" id="kpis"></section>
-
-    <div class="toolbar">
-      <div class="tabs" role="tablist">
-        <div class="tab active" id="tabCustomers" role="tab">Customers</div>
-        <div class="tab" id="tabVehicles" role="tab">Vehicles</div>
-        <div class="tab" id="tabDaily" role="tab">Daily Spend Matrix</div>
-      </div>
-
-      <div class="filters" id="filters">
-        <input type="text" id="search" placeholder="Search (DL, VIN, Plate, Name...)" />
-        <select id="filterMissingUW">
-          <option value="all">UW Rate: All</option>
-          <option value="missing">UW Rate: Missing ($0 / Base)</option>
-        </select>
-        <select id="filterDeal">
-          <option value="all">Deals: All</option>
-          <option value="active">Deals: Active</option>
-          <option value="none">Deals: Stock / Vacant</option>
-        </select>
-        <button class="btn secondary" id="btnExportCSV" style="display:none;">Export Matrix CSV</button>
+    <!-- Upload Modal -->
+    <div class="uploadBackdrop" id="uploadBackdrop">
+      <div class="uploadModal">
+        <div class="uploadHeader">
+          <h2>Upload Data</h2>
+          <button class="btn secondary miniBtn" id="uploadClose">Close</button>
+        </div>
+        <div class="uploadBody">
+          <div class="dropZone" id="dropCustomers">
+            <div class="label">Customers CSV</div>
+            Drop file here or click to browse<br>
+            <span class="small">Columns: Name, Driver License #, Deal Date, Deal end date, Annual insurance rate, Daily insurance rate</span>
+            <div class="status" id="statusCustomers"></div>
+            <input type="file" accept=".csv,.tsv,.txt" style="display:none" id="fileCustomers">
+          </div>
+          <div class="dropZone" id="dropVehicles">
+            <div class="label">Vehicles CSV</div>
+            Drop file here or click to browse<br>
+            <span class="small">Columns: Customer DL, Deal Status, VIN, Brand, Model, Model Year, Plate Number, Diamond Number, etc.</span>
+            <div class="status" id="statusVehicles"></div>
+            <input type="file" accept=".csv,.tsv,.txt" style="display:none" id="fileVehicles">
+          </div>
+        </div>
+        <div class="uploadActions">
+          <button class="btn secondary miniBtn" id="btnClearData">Clear stored data</button>
+          <button class="btn" id="btnLoadCSVs" disabled>Load into dashboard</button>
+        </div>
       </div>
     </div>
 
+    <section class="kpis" id="kpis"></section>
+    <section class="alerts" id="alerts"></section>
+
+    <div class="toolbar">
+      <div class="tabs" role="tablist" aria-label="Views">
+        <div class="tab active" id="tabCustomers" role="tab" tabindex="0">Customers</div>
+        <div class="tab" id="tabVehicles" role="tab" tabindex="0">Vehicles</div>
+        <div class="tab" id="tabOpp" role="tab" tabindex="0">Opportunities</div>
+        <div class="tab" id="tabDaily" role="tab" tabindex="0">Daily Spend</div>
+      </div>
+
+      <div class="filters" id="filters">
+        <input type="text" id="search" placeholder="Search (name, VIN, plate, deal #, tier, stage, location…)" />
+        <select id="filterDeal">
+          <option value="all">Deals: All</option>
+          <option value="active">Deals: Active</option>
+          <option value="none">Deals: None</option>
+          <option value="ended">Deals: Ended (vehicles)</option>
+          <option value="expiring30">Deals: Expiring ≤30d</option>
+        </select>
+        <select id="filterLocation">
+          <option value="all">Location: All</option>
+        </select>
+
+        <div class="matrixActions" id="dailyControls" style="display:none">
+          <select id="rangePreset" style="min-width: 190px">
+            <option value="last_month">Range: Last month (rolling)</option>
+            <option value="mtd">Range: Month to date</option>
+            <option value="custom">Range: Custom</option>
+          </select>
+          <input type="date" id="rangeStart" />
+          <input type="date" id="rangeEnd" />
+          <button class="btn secondary miniBtn" id="btnApplyRange">Apply</button>
+          <button class="btn miniBtn" id="btnExportCSV">Export CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tierStrip" id="tierStrip"></div>
+
     <section class="main">
-      <div class="tableCard">
-        <div id="tableWrap" style="max-height: 65vh; overflow:auto">
+      <div class="tableCard" id="leftPanel">
+        <div id="leftHeader" class="opHeader" style="display:none"></div>
+
+        <div id="tableWrap" style="max-height: 62vh; overflow:auto">
           <table id="table" class="matrix"></table>
         </div>
+
         <div class="tableFooter" id="footer">
           <div id="countText">—</div>
           <div class="pager">
@@ -175,22 +293,40 @@
           </div>
         </div>
       </div>
+
+      <aside class="detail" id="detail">
+        <div class="card">
+          <h2>Details</h2>
+          <div class="muted">Click a row to inspect the record.</div>
+          <div class="divider"></div>
+          <div class="small">
+            Rate logic is enforced per constraints. Select a vehicle to run the Match Simulator.
+          </div>
+        </div>
+      </aside>
     </section>
   </div>
 
   <div class="toast" id="toast"></div>
 
-  <div class="modalBackdrop" id="modalBackdrop">
+  <div class="modalBackdrop" id="modalBackdrop" role="dialog" aria-modal="true">
     <div class="modal">
       <div class="modalHeader">
         <div>
-          <div class="t" id="modalTitle">Record Details</div>
-          <div class="s mono" id="modalSub">—</div>
+          <div class="t" id="modalTitle">VIN</div>
+          <div class="s" id="modalSub">—</div>
         </div>
-        <button class="btn secondary" id="modalClose">Close</button>
+        <button class="btn secondary miniBtn" id="modalClose">Close</button>
       </div>
-      <div class="modalBody" id="modalBody">
+      <div class="modalBody">
+        <canvas id="modalChart" width="920" height="260"></canvas>
+        <div class="legend" style="margin-top:10px">
+          <span>Min: <span class="mono" id="mMin">—</span></span>
+          <span>Max: <span class="mono" id="mMax">—</span></span>
+          <span>Latest: <span class="mono" id="mLast">—</span></span>
+          <span>DL changes shown: <span class="mono" id="mDL">—</span></span>
         </div>
+      </div>
     </div>
   </div>
 
@@ -198,361 +334,854 @@
 // ---------- Core Utils ----------
 function pad(n,len){return String(n).padStart(len,'0')}
 function today0(){const d=new Date();d.setHours(0,0,0,0);return d}
+function startOfYear(){const d=today0();d.setMonth(0,1);return d}
+function startOfMonth(){const d=today0();d.setDate(1);return d}
 function dateISO(d){const z=new Date(d);z.setHours(0,0,0,0);return z.toISOString().slice(0,10)}
 function addDays(d,days){const x=new Date(d);x.setDate(x.getDate()+days);return x}
+function parseISO(s){const d=new Date(s); d.setHours(0,0,0,0); return d;}
 function money(n){return "$"+n.toLocaleString(undefined,{maximumFractionDigits:0})}
 function money2(n){return "$"+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
 const el=(id)=>document.getElementById(id);
 function escapeHTML(str){return String(str).replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[s]))}
+function fmtShortDL(dl){ if(!dl) return "—"; const s=String(dl); return s.length<=6? s : (s.slice(0,2)+"…"+s.slice(-4)); }
 
-// Basic CSV Date Cleaner (Handles DD/MM/YYYY)
-function parseDateString(dateStr) {
-  if (!dateStr) return null;
-  const str = dateStr.toString().trim();
-  const parts = str.split('/');
-  if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-  return str; 
+// ---------- Business Logic & Tiers ----------
+const TIER={LOW_MAX:7500, MED_MAX:9000};
+function rateTier(annual){ if(annual<=TIER.LOW_MAX) return "Low"; if(annual<=TIER.MED_MAX) return "Med"; return "High"; }
+function tierPill(t){ if(t==="Low") return `<span class="pill tierLow"><span class="dot"></span>Low</span>`; if(t==="Med") return `<span class="pill tierMed"><span class="dot"></span>Med</span>`; return `<span class="pill tierHigh"><span class="dot"></span>High</span>`; }
+function dealPill(active){ if(active===true) return `<span class="pill good"><span class="dot"></span>Active</span>`; if(active===false) return `<span class="pill warn"><span class="dot"></span>No</span>`; return `<span class="pill"><span class="dot"></span>—</span>`; }
+function ratePill(source){ if(source==="driver") return `<span class="pill good"><span class="dot"></span>Driver</span>`; if(source==="last_driver") return `<span class="pill warn"><span class="dot"></span>Last driver</span>`; if(source==="base") return `<span class="pill"><span class="dot"></span>Base</span>`; return `<span class="pill"><span class="dot"></span>${source||"—"}</span>`; }
+function diamondPill(expISO){const d=new Date(expISO), now=today0(), diff=Math.round((d-now)/86400000); if(diff<0) return `<span class="pill bad"><span class="dot"></span>Expired</span>`; if(diff<=30) return `<span class="pill warn"><span class="dot"></span>Expiring</span>`; return `<span class="pill good"><span class="dot"></span>Valid</span>`;}
+function dealEndsSoon(endISO){ if(!endISO) return false; const end=new Date(endISO), now=today0(); const diff=Math.round((end-now)/86400000); return diff>=0 && diff<=30; }
+
+// ---------- CSV Parsing & Production Data Loading ----------
+const BASE_RATE_ANNUAL=8200;
+const STORAGE_KEY_CUST="fleet_csv_customers";
+const STORAGE_KEY_VEH="fleet_csv_vehicles";
+
+// Detect delimiter: tab or comma
+function detectDelimiter(text){
+  const firstLine=text.split(/\r?\n/)[0]||"";
+  const tabs=firstLine.split("\t").length;
+  const commas=firstLine.split(",").length;
+  return tabs>commas?"\t":",";
 }
-function parseCurrency(val) {
-  if (!val) return 0;
-  if (typeof val === 'number') return val;
-  return Number(val.replace(/[^0-9.-]+/g, "")) || 0; 
+
+function parseCSV(text){
+  const delim=detectDelimiter(text);
+  if(delim==="\t") return parseTSV(text);
+  // Comma CSV with quoted-field support
+  const lines=[], rows=[];
+  let cur="", inQ=false;
+  const cells=[];
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQ){ if(ch==='"'&&text[i+1]==='"'){cur+='"';i++;}else if(ch==='"'){inQ=false;}else{cur+=ch;} }
+    else{ if(ch==='"'){inQ=true;}else if(ch===','){cells.push(cur);cur="";}else if(ch==='\n'||ch==='\r'){if(cur||cells.length){cells.push(cur);lines.push([...cells]);}cells.length=0;cur="";if(ch==='\r'&&text[i+1]==='\n')i++;}else{cur+=ch;} }
+  }
+  if(cur||cells.length){cells.push(cur);lines.push([...cells]);}
+  if(lines.length<2)return[];
+  const hdr=lines[0].map(h=>h.trim());
+  for(let r=1;r<lines.length;r++){
+    const obj={};
+    for(let c=0;c<hdr.length;c++) obj[hdr[c]]=(lines[r][c]||"").trim();
+    rows.push(obj);
+  }
+  return rows;
+}
+function parseTSV(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)return[];
+  const hdr=lines[0].split("\t").map(h=>h.trim());
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const vals=lines[i].split("\t");
+    const obj={};
+    for(let c=0;c<hdr.length;c++) obj[hdr[c]]=(vals[c]||"").trim();
+    rows.push(obj);
+  }
+  return rows;
+}
+function parseDDMMYYYY(s){
+  if(!s)return null;
+  const parts=s.split("/");
+  if(parts.length!==3)return null;
+  const d=parseInt(parts[0],10),m=parseInt(parts[1],10),y=parseInt(parts[2],10);
+  if(!d||!m||!y)return null;
+  const dt=new Date(y,m-1,d);dt.setHours(0,0,0,0);
+  return dateISO(dt);
+}
+function parseRate(s){
+  if(!s)return null;
+  const cleaned=s.replace(/[,$\s]/g,"");
+  const n=parseFloat(cleaned);
+  return isNaN(n)?null:n;
+}
+function buildFlatRateHistory(annual, daily){
+  const days=120, out=[];
+  const end=today0(), start=addDays(end,-(days-1));
+  for(let i=0;i<days;i++){
+    out.push({date:dateISO(addDays(start,i)), annual, daily, switched:false});
+  }
+  return out;
+}
+function buildFlatDriverTimeline(vehicle, customersById){
+  const history=vehicle.rate_history_120d||[];
+  const map={};
+  if(history.length===0)return{mapByDate:map,dlChangesCount:0};
+  const driverId=vehicle.current_driver_customer_id||vehicle.last_driver_customer_id||null;
+  const c=driverId?customersById[driverId]:null;
+  const dl=c?c.dl_number:null;
+  const source=vehicle.insurance_rate_source;
+  for(const rec of history){
+    map[rec.date]={date:rec.date,daily:rec.daily,annual:rec.annual,dl,driverId,source};
+  }
+  return{mapByDate:map,dlChangesCount:0};
+}
+
+// Normalize column names to handle variations
+function normCol(rows, candidates){
+  if(!rows.length)return null;
+  const keys=Object.keys(rows[0]);
+  for(const c of candidates){
+    const cl=c.toLowerCase();
+    const match=keys.find(k=>k.toLowerCase()===cl);
+    if(match)return match;
+  }
+  return null;
+}
+function getCol(row, colName){ return colName?(row[colName]||"").trim():""; }
+
+function buildDB(custRows, vehRows){
+  const baseAnnual=BASE_RATE_ANNUAL;
+  const baseDailyRate=Math.round((baseAnnual/365)*100)/100;
+
+  // --- Resolve customer CSV column names ---
+  const cCols={
+    name: normCol(custRows,["Name","Customer Name"]),
+    dl: normCol(custRows,["Driver License #","DL","Driver License","Customer DL"]),
+    dealDate: normCol(custRows,["Deal Date"]),
+    dealEnd: normCol(custRows,["Deal end date","Deal End Date"]),
+    annualRate: normCol(custRows,["Annual insurance rate","Annual Insurance Rate","Insurance Annual Rate"]),
+    dailyRate: normCol(custRows,["Daily insurance rate","Daily Insurance Rate","Insurance Daily Rate"]),
+  };
+
+  // --- Build customers from Customers CSV, keyed by DL ---
+  const custByDL=new Map(); // dl -> customer object
+  let custSeq=1;
+  for(const row of custRows){
+    const name=getCol(row,cCols.name);
+    const dl=getCol(row,cCols.dl);
+    if(!name&&!dl)continue;
+    const key=dl||name;
+    if(custByDL.has(key))continue;
+
+    const annualRaw=parseRate(getCol(row,cCols.annualRate));
+    const dailyRaw=parseRate(getCol(row,cCols.dailyRate));
+    const annual=annualRaw||baseAnnual;
+    const daily=dailyRaw||Math.round((annual/365)*100)/100;
+    const dealDate=parseDDMMYYYY(getCol(row,cCols.dealDate));
+    const dealEnd=parseDDMMYYYY(getCol(row,cCols.dealEnd));
+
+    const id="C"+pad(custSeq++,5);
+    custByDL.set(key,{
+      id, name, dl_number:dl, tlc_number:"",
+      insurance_annual_rate:annual, insurance_daily_rate:daily, rate_tier:rateTier(annual),
+      has_active_deal:false, deal_number:null, vin:null, is_lead:true,
+      lead_stage:"Lead", created_at:dealDate||dateISO(today0()),
+      cust_deal_date:dealDate, cust_deal_end:dealEnd
+    });
+  }
+
+  // --- Resolve vehicle CSV column names ---
+  const vCols={
+    dl: normCol(vehRows,["Customer DL"]),
+    tlc: normCol(vehRows,["Customer TLC"]),
+    dealStatus: normCol(vehRows,["Deal Status"]),
+    lease: normCol(vehRows,["Current Lease"]),
+    vin: normCol(vehRows,["VIN"]),
+    shortVin: normCol(vehRows,["Short VIN"]),
+    brand: normCol(vehRows,["Brand"]),
+    model: normCol(vehRows,["Model"]),
+    year: normCol(vehRows,["Model Year"]),
+    color: normCol(vehRows,["Exterior Color"]),
+    plate: normCol(vehRows,["Plate Number"]),
+    plateExp: normCol(vehRows,["Plate Number Expiration Date"]),
+    plateStatus: normCol(vehRows,["Plate Status"]),
+    diamond: normCol(vehRows,["Diamond Number"]),
+    diamondExp: normCol(vehRows,["Diamond Expiration"]),
+    startDate: normCol(vehRows,["Start Deal Date"]),
+    endDate: normCol(vehRows,["End Deal Date"]),
+    channel: normCol(vehRows,["Sales Channel"]),
+    location: normCol(vehRows,["Physical Location"]),
+  };
+
+  // Reverse lookup: dl -> customer id
+  const dlToId=new Map();
+  for(const[key,c]of custByDL) dlToId.set(key,c.id);
+  const customersById={};
+  for(const c of custByDL.values()) customersById[c.id]=c;
+
+  // --- Build vehicles from Vehicles CSV ---
+  const vehicles=[];
+  let vSeq=1;
+  for(const row of vehRows){
+    const vin=getCol(row,vCols.vin);
+    const shortVin=getCol(row,vCols.shortVin);
+    const vehicleVin=vin||(shortVin?("NOVIN-"+shortVin):"");
+    if(!vehicleVin)continue;
+
+    const brand=getCol(row,vCols.brand);
+    const model=getCol(row,vCols.model);
+    const year=getCol(row,vCols.year);
+    const typeModel=`${brand} ${model} ${year}`.trim();
+
+    const plate=getCol(row,vCols.plate);
+    const plateStatus=getCol(row,vCols.plateStatus);
+    const diamond=getCol(row,vCols.diamond);
+    const diamondExp=parseDDMMYYYY(getCol(row,vCols.diamondExp))||dateISO(addDays(today0(),180));
+
+    const dealStatus=getCol(row,vCols.dealStatus).toUpperCase();
+    const currentLease=getCol(row,vCols.lease);
+    const startDate=parseDDMMYYYY(getCol(row,vCols.startDate));
+    const endDate=parseDDMMYYYY(getCol(row,vCols.endDate));
+    const channel=getCol(row,vCols.channel);
+    const location=getCol(row,vCols.location)||"Unknown";
+    const color=getCol(row,vCols.color);
+    const plateExp=parseDDMMYYYY(getCol(row,vCols.plateExp));
+
+    const custDL=getCol(row,vCols.dl);
+    const custTLC=getCol(row,vCols.tlc);
+    const custId=custDL?dlToId.get(custDL)||null:null;
+
+    // Update TLC on customer if available
+    if(custId&&custTLC){const c=customersById[custId]; if(c&&!c.tlc_number)c.tlc_number=custTLC;}
+
+    const isActive=(dealStatus==="ACTIVE");
+    const isSold=(dealStatus==="SOLD"||dealStatus==="SURRENDERED");
+    const isStock=(dealStatus==="STOCK"||!custDL);
+
+    let rateSource="base", annual=baseAnnual, daily=baseDailyRate;
+    let currentDriverId=null, lastDriverId=null, lastDriverAnnual=null;
+    let hasDeal=false, dealNumber=currentLease||null;
+
+    if(isActive&&custId){
+      hasDeal=true;
+      currentDriverId=custId;
+      const cust=customersById[custId];
+      if(cust){
+        annual=cust.insurance_annual_rate;
+        daily=cust.insurance_daily_rate;
+        rateSource="driver";
+        cust.has_active_deal=true;
+        cust.deal_number=dealNumber;
+        cust.vin=vehicleVin;
+        cust.is_lead=false;
+        cust.lead_stage=null;
+      }
+    } else if(isSold&&custId){
+      lastDriverId=custId;
+      const cust=customersById[custId];
+      if(cust){
+        lastDriverAnnual=cust.insurance_annual_rate;
+        annual=cust.insurance_annual_rate;
+        daily=cust.insurance_daily_rate;
+      }
+      rateSource="last_driver";
+    }
+
+    const vid="V"+pad(vSeq++,5);
+    vehicles.push({
+      id:vid, type_make_model:typeModel,
+      vin:vehicleVin, plate, diamond, diamond_expiration_date:diamondExp,
+      has_active_deal:hasDeal, deal_number:dealNumber,
+      deal_start_date:startDate, deal_end_date:endDate, sales_channel:channel||null,
+      vehicle_location:location, different_drivers_ytd:0, drivers_switched_ytd:0,
+      insurance_annual_rate:annual, insurance_daily_rate:daily,
+      insurance_rate_source:rateSource,
+      current_driver_customer_id:currentDriverId, last_driver_customer_id:lastDriverId,
+      last_driver_annual_rate:lastDriverAnnual,
+      rate_history_120d:[], status_changed_at:startDate||dateISO(today0()),
+      daily_map_120d:null, dl_changes_120d:0,
+      color, plate_status:plateStatus, plate_expiration:plateExp, deal_status_raw:dealStatus
+    });
+  }
+
+  const customers=[...custByDL.values()];
+  const vehiclesByVIN=Object.fromEntries(vehicles.map(v=>[v.vin,v]));
+
+  // Build rate history and driver timeline
+  for(const v of vehicles){
+    v.rate_history_120d=buildFlatRateHistory(v.insurance_annual_rate,v.insurance_daily_rate);
+    const{mapByDate,dlChangesCount}=buildFlatDriverTimeline(v,customersById);
+    v.daily_map_120d=mapByDate;
+    v.dl_changes_120d=dlChangesCount;
+  }
+
+  const matched=vehicles.filter(v=>v.current_driver_customer_id).length;
+  const unmatched=vehicles.filter(v=>v.has_active_deal&&!v.current_driver_customer_id).length;
+
+  return{
+    meta:{source:"csv_upload",generated_at:new Date().toISOString(),customers_count:customers.length,vehicles_count:vehicles.length,base_rate_annual:baseAnnual,matched_vehicles:matched,unmatched_active:unmatched},
+    customers,vehicles,index:{customersById,vehiclesByVIN}
+  };
+}
+
+// --- Storage helpers ---
+function saveCSVsToStorage(custText,vehText){
+  try{ localStorage.setItem(STORAGE_KEY_CUST,custText); localStorage.setItem(STORAGE_KEY_VEH,vehText); }catch(e){ console.warn("localStorage save failed:",e); }
+}
+function loadCSVsFromStorage(){
+  const c=localStorage.getItem(STORAGE_KEY_CUST), v=localStorage.getItem(STORAGE_KEY_VEH);
+  if(c&&v)return{custText:c,vehText:v};
+  return null;
+}
+function clearCSVsFromStorage(){
+  localStorage.removeItem(STORAGE_KEY_CUST); localStorage.removeItem(STORAGE_KEY_VEH);
+}
+
+// --- Upload UI wiring ---
+let pendingCustText=null, pendingVehText=null;
+
+function setupUploadUI(){
+  const backdrop=el("uploadBackdrop");
+  const dropC=el("dropCustomers"), dropV=el("dropVehicles");
+  const fileC=el("fileCustomers"), fileV=el("fileVehicles");
+  const statusC=el("statusCustomers"), statusV=el("statusVehicles");
+  const btnLoad=el("btnLoadCSVs");
+
+  function openUpload(){ backdrop.style.display="flex"; }
+  function closeUpload(){ backdrop.style.display="none"; }
+
+  el("btnUpload").addEventListener("click", openUpload);
+  el("uploadClose").addEventListener("click", closeUpload);
+  backdrop.addEventListener("click", e=>{ if(e.target===backdrop)closeUpload(); });
+
+  function updateLoadBtn(){
+    btnLoad.disabled=!(pendingCustText&&pendingVehText);
+  }
+
+  function handleFile(text, type){
+    const rows=parseCSV(text);
+    if(type==="customers"){
+      pendingCustText=text;
+      const hasName=rows.length>0&&normCol(rows,["Name","Customer Name"]);
+      const hasDL=rows.length>0&&normCol(rows,["Driver License #","DL","Driver License","Customer DL"]);
+      if(rows.length>0&&hasName&&hasDL){
+        statusC.className="status ok";
+        statusC.textContent=`${rows.length} customers parsed`;
+        dropC.classList.add("loaded");
+      } else {
+        statusC.className="status err";
+        statusC.textContent=rows.length===0?"No rows found":"Missing Name or DL column";
+        pendingCustText=null;
+      }
+    } else {
+      pendingVehText=text;
+      const hasVIN=rows.length>0&&normCol(rows,["VIN"]);
+      if(rows.length>0&&hasVIN){
+        statusV.className="status ok";
+        statusV.textContent=`${rows.length} vehicles parsed`;
+        dropV.classList.add("loaded");
+      } else {
+        statusV.className="status err";
+        statusV.textContent=rows.length===0?"No rows found":"Missing VIN column";
+        pendingVehText=null;
+      }
+    }
+    updateLoadBtn();
+  }
+
+  function setupDrop(zone, input, type){
+    zone.addEventListener("click", ()=>input.click());
+    input.addEventListener("change", ()=>{ if(input.files[0]){ input.files[0].text().then(t=>handleFile(t,type)); }});
+    zone.addEventListener("dragover", e=>{e.preventDefault();zone.classList.add("dragover");});
+    zone.addEventListener("dragleave", ()=>zone.classList.remove("dragover"));
+    zone.addEventListener("drop", e=>{
+      e.preventDefault(); zone.classList.remove("dragover");
+      const file=e.dataTransfer.files[0];
+      if(file) file.text().then(t=>handleFile(t,type));
+    });
+  }
+  setupDrop(dropC, fileC, "customers");
+  setupDrop(dropV, fileV, "vehicles");
+
+  btnLoad.addEventListener("click", ()=>{
+    if(!pendingCustText||!pendingVehText)return;
+    try{
+      const custRows=parseCSV(pendingCustText);
+      const vehRows=parseCSV(pendingVehText);
+      DB=buildDB(custRows,vehRows);
+      saveCSVsToStorage(pendingCustText,pendingVehText);
+      OPPS=buildOpportunities(); page=1; selectedKey=null; tierFilter="all"; oppSection="all";
+      dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange);
+      refreshAll(); updateDataChip();
+      closeUpload();
+      toast(`Loaded ${DB.meta.customers_count} customers + ${DB.meta.vehicles_count} vehicles.`);
+    }catch(e){
+      toast("Error building DB: "+e.message);
+    }
+  });
+
+  el("btnClearData").addEventListener("click", ()=>{
+    clearCSVsFromStorage();
+    pendingCustText=null; pendingVehText=null;
+    statusC.textContent=""; statusV.textContent="";
+    dropC.classList.remove("loaded"); dropV.classList.remove("loaded");
+    updateLoadBtn();
+    toast("Stored data cleared. Upload new CSVs.");
+  });
+}
+
+function updateDataChip(){
+  const chip=el("dataSourceChip");
+  if(!DB){chip.innerHTML="";return;}
+  const c=DB.meta.customers_count, v=DB.meta.vehicles_count;
+  chip.innerHTML=`<span class="dataChip">${c} customers &bull; ${v} vehicles</span>`;
 }
 
 // ---------- UI State ----------
-let DB = { customers: [], vehicles: [] };
+let DB;
 let view="customers";
 let page=1;
-const pageSize=50;
+const pageSize=40;
+let selectedKey=null;
 let lastToastTimeout=null;
-const BASE_RATE = 8200; // Fleet base rate
+let tierFilter="all";
+let OPPS=[];
+let oppSection="all";
+let dailyRange = {start:null, end:null};
 
 function toast(msg){
   const t=el("toast"); t.textContent=msg; t.style.display="block";
   clearTimeout(lastToastTimeout);
-  lastToastTimeout=setTimeout(()=>{t.style.display="none";},3000);
+  lastToastTimeout=setTimeout(()=>{t.style.display="none";},2400);
 }
 
-// ==========================================
-// STRICT CSV INGESTION LOGIC 
-// ==========================================
-let uploadedData = { customers: null, vehicles: null };
-
-function handleCSVUpload(event, type) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  Papa.parse(file, {
-    header: true,
-    dynamicTyping: true,
-    skipEmptyLines: true,
-    complete: function(results) {
-      if (type === 'customers') {
-        uploadedData.customers = results.data;
-        el("btnCustFile").textContent = "✅ Customers Loaded";
-      } else {
-        uploadedData.vehicles = results.data;
-        el("btnVehFile").textContent = "✅ Vehicles Loaded";
-      }
-      if (uploadedData.customers && uploadedData.vehicles) {
-        el("btnRunDashboard").disabled = false;
-      }
-    }
-  });
+// ---------- KPIs & Alerts ----------
+function computeSpend(){
+  const vehicles=DB.vehicles;
+  const dailySpendAll=vehicles.reduce((s,v)=>s+(v.insurance_daily_rate || (v.insurance_annual_rate/365)),0);
+  const daysYTD=Math.max(1, Math.round((today0()-startOfYear())/86400000)+1);
+  const daysMTD=Math.max(1, Math.round((today0()-startOfMonth())/86400000)+1);
+  return {dailySpendAll, spentYTD: dailySpendAll*daysYTD, spentMTD: dailySpendAll*daysMTD};
 }
-
-function ingestRealData() {
-  let realVehicles = [];
-  let realCustomers = [];
-  let custMapByDL = {};
-
-  // 1. Process Customers (The Source of Truth for UW Rates)
-  uploadedData.customers.forEach(row => {
-    let dl = (row['Driver License #'] || row['Driver Licenc'] || '').toString().trim();
-    if (!dl) return;
-
-    let annualRate = parseCurrency(row['Annual insurance rate'] || row['Annual insura']);
-    let isMissingUW = (annualRate === 0);
-    
-    custMapByDL[dl] = {
-      dl_number: dl,
-      name: row['Name'] || row['Email'] || `Driver ${dl}`,
-      insurance_annual_rate: isMissingUW ? BASE_RATE : annualRate,
-      insurance_daily_rate: Math.round(((isMissingUW ? BASE_RATE : annualRate) / 365) * 100) / 100,
-      missing_uw_rate: isMissingUW,
-      deal_start: parseDateString(row['Deal Date']),
-      deal_end: parseDateString(row['Deal end date']),
-      has_active_deal: false, 
-      vin: null
-    };
-  });
-
-  // 2. Process Vehicles & Link Drivers
-  uploadedData.vehicles.forEach(row => {
-    let vin = (row['VIN'] || '').toString().trim();
-    if (!vin) return;
-
-    let rawStatus = (row['Deal Status'] || '').toString().toUpperCase();
-    let isActive = rawStatus.includes('ACTIVE');
-    let driverDL = (row['Customer DL'] || '').toString().trim();
-    
-    let vehicleAnnualRate = BASE_RATE;
-    let rateSource = "Base Fleet Rate (Stock/Vacant)";
-    let missingUWFlag = false;
-
-    // Cross-Reference Driver
-    if (isActive && driverDL) {
-      let driver = custMapByDL[driverDL];
-      if (driver) {
-        driver.has_active_deal = true;
-        driver.vin = vin;
-        
-        if (driver.missing_uw_rate) {
-          rateSource = "Base Fleet Rate (Driver Missing UW)";
-          missingUWFlag = true;
-        } else {
-          vehicleAnnualRate = driver.insurance_annual_rate;
-          rateSource = "Driver UW Rate";
-        }
-      } else {
-        rateSource = "Base Fleet Rate (Driver not in System)";
-        missingUWFlag = true;
-      }
-    }
-
-    const dailyRate = Math.round((vehicleAnnualRate / 365) * 100) / 100;
-
-    const v = {
-      vin: vin,
-      type_make_model: `${row['Brand']||''} ${row['Model']||''} ${row['Model Year']||''}`.trim(),
-      plate: row['Plate Number'] || '—',
-      has_active_deal: isActive,
-      driver_dl: driverDL || null,
-      deal_start: parseDateString(row['Start Deal Date']),
-      deal_end: parseDateString(row['End Deal Date']),
-      vehicle_location: row['Physical Location'] || 'Unknown',
-      insurance_annual_rate: vehicleAnnualRate,
-      insurance_daily_rate: dailyRate,
-      insurance_rate_source: rateSource,
-      missing_uw_rate: missingUWFlag
-    };
-    realVehicles.push(v);
-  });
-
-  // Extract map to array
-  realCustomers = Object.values(custMapByDL);
-
-  DB = { customers: realCustomers, vehicles: realVehicles };
-  
-  page=1;
-  refreshAll();
-  toast("✅ MVP Data Processed Successfully!");
+function computeMoneyOnFloor(){
+  const vehicles=DB.vehicles;
+  const vacant=vehicles.filter(v=>!v.has_active_deal && !v.last_driver_customer_id);
+  const vacantDaily=vacant.reduce((s,v)=>s+v.insurance_daily_rate,0);
+  const medCapDaily = Math.round((TIER.MED_MAX/365)*100)/100;
+  const highPremiumDaily = vehicles.filter(v=>rateTier(v.insurance_annual_rate)==="High").reduce((s,v)=>s+Math.max(0,(v.insurance_daily_rate - medCapDaily)),0);
+  return {vacantDaily, highPremiumDaily, totalAvoidableDaily: vacantDaily + highPremiumDaily};
 }
-
-document.getElementById('uploadCustomers').addEventListener('change', (e) => handleCSVUpload(e, 'customers'));
-document.getElementById('uploadVehicles').addEventListener('change', (e) => handleCSVUpload(e, 'vehicles'));
-document.getElementById('btnRunDashboard').addEventListener('click', ingestRealData);
-
-
-// ---------- KPIs ----------
 function renderKPIs(){
-  if (DB.vehicles.length === 0) return el("kpis").innerHTML = "";
+  const customers=DB.customers, vehicles=DB.vehicles;
+  const {dailySpendAll, spentYTD, spentMTD}=computeSpend();
+  const mof=computeMoneyOnFloor();
+  const vacantVehicles = vehicles.filter(v=>!v.has_active_deal && !v.last_driver_customer_id).length;
+  const expiring30 = vehicles.filter(v=>v.has_active_deal && dealEndsSoon(v.deal_end_date)).length;
+  const highTierVehicles = vehicles.filter(v=>rateTier(v.insurance_annual_rate)==="High").length;
+  const switched3Plus = vehicles.filter(v=>v.drivers_switched_ytd>=3).length;
+  const totalVehicles = vehicles.length;
+  const penalty = ((vacantVehicles/totalVehicles)*55) + ((highTierVehicles/totalVehicles)*35) + (switched3Plus/totalVehicles*10);
+  const efficiency = Math.round(clamp(100-penalty,0,100));
+  const tierCounts={Low:0,Med:0,High:0}, leadTierCounts={Low:0,Med:0,High:0};
+  for(const c of customers){ tierCounts[c.rate_tier]++; if(!c.has_active_deal) leadTierCounts[c.rate_tier]++; }
+  const leads = customers.filter(c=>!c.has_active_deal).length;
 
-  const totalVehicles = DB.vehicles.length;
-  const activeVehicles = DB.vehicles.filter(v => v.has_active_deal).length;
-  const vacantVehicles = totalVehicles - activeVehicles;
-  
-  const dailySpend = DB.vehicles.reduce((sum, v) => sum + v.insurance_daily_rate, 0);
-  const missingUWCount = DB.customers.filter(c => c.missing_uw_rate).length;
-
-  el("kpis").innerHTML = `
-    <div class="card"><div class="kpiLabel">Total Fleet Daily Spend</div><div class="kpiValue">${money2(dailySpend)} / day</div><div class="kpiHint">Total annual liability: <strong>${money(Math.round(dailySpend*365))}</strong></div></div>
-    <div class="card"><div class="kpiLabel">Fleet Utilization</div><div class="kpiValue">${activeVehicles} <span style="font-size:14px; color:var(--muted)">/ ${totalVehicles}</span></div><div class="kpiHint"><strong>${vacantVehicles}</strong> vehicles in stock/vacant paying base rate.</div></div>
-    <div class="card"><div class="kpiLabel">Data Integrity (Missing UW)</div><div class="kpiValue">${missingUWCount} <span style="font-size:14px; color:var(--muted)">drivers</span></div><div class="kpiHint">Drivers with $0.00 UW rate in system. Defaulting to base.</div></div>
-  `;
+  el("kpis").innerHTML = [
+    {label:"Insurance spent", value: money(Math.round(spentYTD)), hint:`<div class="kpiRow"><div class="kpiMini"><span>YTD</span> <b>${money(Math.round(spentYTD))}</b></div><div class="kpiMini"><span>MTD</span> <b>${money(Math.round(spentMTD))}</b></div><div class="kpiMini"><span>Daily avg</span> <b>${money(Math.round(dailySpendAll))}</b></div></div>`},
+    {label:"Money on the floor (daily)", value: money(Math.round(mof.totalAvoidableDaily)), hint:`Vacant burn: <strong>${money(Math.round(mof.vacantDaily))}</strong> • High-tier premium: <strong>${money(Math.round(mof.highPremiumDaily))}</strong>`},
+    {label:"Insurance efficiency score", value: `${efficiency} / 100`, hint:`Vacant: <strong>${vacantVehicles}</strong> • Expiring ≤30d: <strong>${expiring30}</strong> • High tier: <strong>${highTierVehicles}</strong> • 3+ switches: <strong>${switched3Plus}</strong>`},
+    {label:"Pipeline & tiers", value: `${leads.toLocaleString()} leads`, hint:`All tiers: Low ${tierCounts.Low} • Med ${tierCounts.Med} • High ${tierCounts.High}<br/>Lead tiers: Low ${leadTierCounts.Low} • Med ${leadTierCounts.Med} • High ${leadTierCounts.High}`}
+  ].map(x=>`<div class="card"><div class="kpiLabel">${x.label}</div><div class="kpiValue">${x.value}</div><div class="kpiHint">${x.hint}</div></div>`).join("");
 }
 
-// ---------- Filtering & Table ----------
-function getFilters() {
-  return {
-    q: el("search").value.trim().toLowerCase(),
-    deal: el("filterDeal").value,
-    missingUW: el("filterMissingUW").value
-  };
+function daysSince(iso){ if(!iso) return 0; const d=new Date(iso); d.setHours(0,0,0,0); return Math.round((today0()-d)/86400000); }
+function daysUntil(iso){ if(!iso) return 9999; const d=new Date(iso); d.setHours(0,0,0,0); return Math.round((d-today0())/86400000); }
+function renderAlerts(){
+  const vehicles=DB.vehicles, customers=DB.customers;
+  const vacant7d = vehicles.filter(v=>!v.has_active_deal && !v.last_driver_customer_id && daysSince(v.status_changed_at) >= 7);
+  const expiring14d = vehicles.filter(v=>v.has_active_deal && daysUntil(v.deal_end_date) <= 14 && daysUntil(v.deal_end_date) >= 0);
+  const highTierSwitchy = vehicles.filter(v=>rateTier(v.insurance_annual_rate)==="High" && v.drivers_switched_ytd>=3);
+  const lowLeads = customers.filter(c=>!c.has_active_deal && c.rate_tier==="Low");
+  el("alerts").innerHTML = `
+    <div class="alert"><div class="t">Queue</div><div class="v"><b>${vacant7d.length}</b> vacant vehicles &gt; 7 days</div><div class="s">Paying base rate daily with no driver history. Pair with low-tier leads (available: <b>${lowLeads.length}</b>).</div></div>
+    <div class="alert"><div class="t">At-risk</div><div class="v"><b>${expiring14d.length}</b> deals expiring in 14 days</div><div class="s">Prioritize replacements so these don’t become vacant. Use Daily Spend to validate DL changes over time.</div></div>
+    <div class="alert"><div class="t">Overpay / churn</div><div class="v"><b>${highTierSwitchy.length}</b> vehicles High-tier + 3+ switches</div><div class="s">Often correlates with volatile rates and operational churn. Investigate driver stability.</div></div>`;
 }
 
-function renderTable(){
-  if (DB.vehicles.length === 0) return;
-  const table = el("table"), wrap = el("tableWrap");
-  const f = getFilters();
+// ---------- Filters & Tiers ----------
+function renderTierStrip(){
+  const leads=DB.customers.filter(c=>!c.has_active_deal);
+  const tiers=["Low","Med","High"];
+  let counts={Low:0,Med:0,High:0};
+  if(view==="customers"){ for(const c of DB.customers) counts[c.rate_tier]++; }
+  else if(view==="opportunities"){ for(const c of leads) counts[c.rate_tier]++; }
+  else { for(const v of DB.vehicles) counts[rateTier(v.insurance_annual_rate)]++; }
 
-  el("btnExportCSV").style.display = (view==="daily") ? "block" : "none";
+  const cards=[ {key:"all", title:"Tier filter", num:"All", sub:"Click a tier to filter"}, ...tiers.map(t=>({key:t, title:`${t} tier`, num: counts[t].toLocaleString(), sub:(view==="opportunities"?"leads":"vehicles")})) ];
+  el("tierStrip").innerHTML = cards.map(c=>{
+    const active=(tierFilter===c.key)?"active":"";
+    const tag=c.key==="Low"?tierPill("Low"):c.key==="Med"?tierPill("Med"):c.key==="High"?tierPill("High"):`<span class="pill"><span class="dot"></span>All</span>`;
+    return `<div class="tierCard ${active}" data-tier="${c.key}"><div class="t">${c.title}</div><div class="n">${tag} <span class="mono" style="margin-left:8px">${escapeHTML(c.num)}</span></div><div class="t" style="margin-top:4px">${c.sub}</div></div>`;
+  }).join("");
+  el("tierStrip").querySelectorAll(".tierCard").forEach(x=>{
+    x.addEventListener("click", ()=>{ tierFilter=x.getAttribute("data-tier"); page=1; selectedKey=null; renderTierStrip(); renderTable(); renderDetail(); });
+  });
+}
+function getSearchTerm(){ return el("search").value.trim().toLowerCase(); }
+function getDealFilter(){ return el("filterDeal").value; }
+function getLocFilter(){ return el("filterLocation").value; }
+function passesTierCustomer(c){ return tierFilter==="all" ? true : (c.rate_tier===tierFilter); }
+function passesTierVehicle(v){ return tierFilter==="all" ? true : (rateTier(v.insurance_annual_rate)===tierFilter); }
 
-  let rows = [];
-  if (view === "customers") {
-    wrap.classList.remove("matrixWrap");
-    rows = DB.customers.filter(c => {
-      if (f.deal === "active" && !c.has_active_deal) return false;
-      if (f.deal === "none" && c.has_active_deal) return false;
-      if (f.missingUW === "missing" && !c.missing_uw_rate) return false;
-      if (f.q && ![c.name, c.dl_number, c.vin].join(" ").toLowerCase().includes(f.q)) return false;
-      return true;
+function filterCustomers(rows){
+  const q=getSearchTerm(), df=getDealFilter();
+  return rows.filter(c=>{
+    if(!passesTierCustomer(c)) return false;
+    if(df==="active" && !c.has_active_deal) return false;
+    if(df==="none" && c.has_active_deal) return false;
+    if(q){ const hay=[c.name,c.id,c.dl_number,c.tlc_number,c.deal_number||"",c.vin||"",c.rate_tier,c.lead_stage||""].join(" ").toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+}
+function filterVehicles(rows){
+  const q=getSearchTerm(), df=getDealFilter(), lf=getLocFilter();
+  return rows.filter(v=>{
+    if(!passesTierVehicle(v)) return false;
+    if(lf!=="all" && v.vehicle_location!==lf) return false;
+    if(df==="active" && !v.has_active_deal) return false;
+    if(df==="none" && (v.has_active_deal || v.last_driver_customer_id)) return false;
+    if(df==="ended" && (v.has_active_deal || !v.last_driver_customer_id)) return false;
+    if(df==="expiring30" && !(v.has_active_deal && dealEndsSoon(v.deal_end_date))) return false;
+    if(q){ const hay=[v.type_make_model,v.vin,v.plate,v.diamond,v.deal_number||"",v.vehicle_location,v.current_driver_customer_id||"",v.last_driver_customer_id||"",rateTier(v.insurance_annual_rate),v.sales_channel||""].join(" ").toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+}
+function paginate(rows){
+  const total=rows.length; const totalPages=Math.max(1, Math.ceil(total/pageSize));
+  page=Math.max(1, Math.min(page,totalPages));
+  const start=(page-1)*pageSize; return {slice: rows.slice(start,start+pageSize), total, totalPages};
+}
+
+// ---------- Opportunities ----------
+function buildOpportunities(){
+  const vehicles=DB.vehicles, leads=DB.customers.filter(c=>!c.has_active_deal);
+  const lowMedLeads = leads.filter(c=>c.rate_tier!=="High").sort((a,b)=>a.insurance_annual_rate-b.insurance_annual_rate);
+  const vacant = vehicles.filter(v=>!v.has_active_deal && !v.last_driver_customer_id).map(v=>({kind:"Vacant", v}));
+  const expiring = vehicles.filter(v=>v.has_active_deal && dealEndsSoon(v.deal_end_date)).map(v=>({kind:"Expiring ≤30d", v}));
+  const highTier = vehicles.filter(v=>rateTier(v.insurance_annual_rate)==="High" && v.has_active_deal).map(v=>({kind:"High-tier active", v}));
+
+  const out=[]; let cursor=0; function pickLead(){ return cursor<lowMedLeads.length ? lowMedLeads[cursor++] : null; }
+  for(const item of [...vacant, ...expiring, ...highTier]){
+    const lead=pickLead(), v=item.v;
+    const currentDaily=v.insurance_daily_rate, leadDaily=lead?lead.insurance_daily_rate:null;
+    const savingsDaily=(leadDaily!=null)?Math.max(0,currentDaily-leadDaily):null;
+    out.push({
+      kind:item.kind, vin:v.vin, vehicle:v.type_make_model, location:v.vehicle_location, deal_end:v.deal_end_date,
+      current_tier: rateTier(v.insurance_annual_rate), current_daily: currentDaily, current_source: v.insurance_rate_source,
+      switches:v.drivers_switched_ytd, lead_id: lead?lead.id:null, lead_name: lead?lead.name:null, lead_tier: lead?lead.rate_tier:null,
+      lead_daily: leadDaily, savings_daily: savingsDaily, savings_30d: savingsDaily!=null ? savingsDaily*30 : null
     });
-
-    const start = (page-1)*pageSize;
-    const slice = rows.slice(start, start+pageSize);
-
-    let headers = `<thead><tr><th>Name</th><th>DL #</th><th>Deal Start</th><th>Deal End</th><th>Assigned VIN</th><th>UW Annual Rate</th><th>Status</th></tr></thead>`;
-    let body = `<tbody>` + slice.map(c => {
-      const uwPill = c.missing_uw_rate ? `<span class="pill bad"><span class="dot"></span>Missing UW ($0)</span>` : `<span class="pill good"><span class="dot"></span>${money(c.insurance_annual_rate)}/yr</span>`;
-      const dealPill = c.has_active_deal ? `<span class="pill good"><span class="dot"></span>Active</span>` : `<span class="pill"><span class="dot"></span>None</span>`;
-      return `<tr onclick="openModal('customer', '${c.dl_number}')">
-        <td>${escapeHTML(c.name)}</td><td class="mono">${c.dl_number}</td>
-        <td>${c.deal_start||'—'}</td><td>${c.deal_end||'—'}</td>
-        <td class="mono">${c.vin||'—'}</td><td>${uwPill}</td><td>${dealPill}</td>
-      </tr>`;
-    }).join("") + `</tbody>`;
-    
-    table.innerHTML = headers + body;
-    footerFor(rows.length, "customers", Math.ceil(rows.length/pageSize));
-
-  } else if (view === "vehicles") {
-    wrap.classList.remove("matrixWrap");
-    rows = DB.vehicles.filter(v => {
-      if (f.deal === "active" && !v.has_active_deal) return false;
-      if (f.deal === "none" && v.has_active_deal) return false;
-      if (f.missingUW === "missing" && !v.missing_uw_rate) return false;
-      if (f.q && ![v.vin, v.type_make_model, v.plate, v.driver_dl].join(" ").toLowerCase().includes(f.q)) return false;
-      return true;
-    });
-
-    const start = (page-1)*pageSize;
-    const slice = rows.slice(start, start+pageSize);
-
-    let headers = `<thead><tr><th>VIN</th><th>Vehicle</th><th>Plate</th><th>Location</th><th>Driver DL</th><th>Deal End</th><th>Daily Rate</th><th>Rate Source</th></tr></thead>`;
-    let body = `<tbody>` + slice.map(v => {
-      const drv = v.driver_dl ? `<span class="mono">${v.driver_dl}</span>` : `<span class="small">—</span>`;
-      const warn = v.missing_uw_rate || !v.has_active_deal ? "bad" : "good";
-      return `<tr onclick="openModal('vehicle', '${v.vin}')">
-        <td class="mono">${v.vin}</td><td>${escapeHTML(v.type_make_model)}</td><td class="mono">${v.plate}</td>
-        <td>${escapeHTML(v.vehicle_location)}</td><td>${drv}</td><td>${v.deal_end||'—'}</td>
-        <td><b>${money2(v.insurance_daily_rate)}</b></td><td><span class="pill ${warn}"><span class="dot"></span>${v.insurance_rate_source}</span></td>
-      </tr>`;
-    }).join("") + `</tbody>`;
-
-    table.innerHTML = headers + body;
-    footerFor(rows.length, "vehicles", Math.ceil(rows.length/pageSize));
-
-  } else if (view === "daily") {
-    wrap.classList.add("matrixWrap");
-    rows = DB.vehicles.filter(v => {
-      if (f.deal === "active" && !v.has_active_deal) return false;
-      if (f.deal === "none" && v.has_active_deal) return false;
-      if (f.q && ![v.vin, v.type_make_model, v.driver_dl].join(" ").toLowerCase().includes(f.q)) return false;
-      return true;
-    });
-
-    const start = (page-1)*pageSize;
-    const slice = rows.slice(start, start+pageSize);
-    
-    // Generate 30 days of dates backwards from today for extrapolation
-    let dates = [];
-    for(let i=29; i>=0; i--) dates.push(dateISO(addDays(today0(), -i)));
-
-    const dateHeaders = dates.map(d=>`<th class="mono" style="width: 90px">${d.slice(5,10)}</th>`).join("");
-    let headers = `<thead><tr><th style="width: 220px">VIN</th><th style="width: 220px">Vehicle</th>${dateHeaders}</tr></thead>`;
-    
-    let body = `<tbody>` + slice.map(v => {
-      // Extrapolation logic: apply current rate/driver backwards identically
-      const drv = v.driver_dl ? v.driver_dl.slice(-6) : "STOCK";
-      const cls = !v.has_active_deal ? "vacant" : "";
-      
-      const rowCells = dates.map(() => {
-        return `<td><div class="cell ${cls}"><div class="p">${money2(v.insurance_daily_rate)}</div><div class="dl">${drv}</div></div></td>`;
-      }).join("");
-
-      return `<tr onclick="openModal('vehicle', '${v.vin}')">
-        <td class="mono"><b>${v.vin}</b><div class="small">${v.insurance_rate_source}</div></td>
-        <td>${escapeHTML(v.type_make_model)}<div class="small">${v.plate}</div></td>
-        ${rowCells}
-      </tr>`;
-    }).join("") + `</tbody>`;
-
-    table.innerHTML = headers + body;
-    footerFor(rows.length, "vehicles", Math.ceil(rows.length/pageSize));
   }
+  out.sort((a,b)=> (b.savings_daily||-1) - (a.savings_daily||-1)); return out;
+}
+function renderOppHeader(){
+  const counts = { all: OPPS.length, vacant: OPPS.filter(o=>o.kind==="Vacant").length, expiring: OPPS.filter(o=>o.kind.startsWith("Expiring")).length, hightier: OPPS.filter(o=>o.kind.startsWith("High-tier")).length };
+  const buttons = [ {k:"all", label:`All (${counts.all})`}, {k:"vacant", label:`Vacant (${counts.vacant})`}, {k:"expiring", label:`Expiring ≤30d (${counts.expiring})`}, {k:"hightier", label:`High-tier (${counts.hightier})`} ].map(b=>{
+    const on=(oppSection===b.k)?"good":""; return `<span class="pill ${on}" style="cursor:pointer" data-opp="${b.k}"><span class="dot"></span>${b.label}</span>`;
+  }).join(" ");
+  el("leftHeader").style.display="flex"; el("leftHeader").innerHTML = `<div><div class="h">Opportunities</div><div class="d">Suggested matches: low-rate leads ↔ vacant / expiring vehicles. Includes estimated savings.</div></div><div>${buttons}</div>`;
+  el("leftHeader").querySelectorAll("[data-opp]").forEach(x=>{ x.addEventListener("click", ()=>{ oppSection=x.getAttribute("data-opp"); page=1; selectedKey=null; renderTable(); renderDetail(); renderOppHeader(); }); });
 }
 
-function footerFor(total, label, totalPages){
+// ---------- Daily Spend Config ----------
+function getDefaultDailyRange(){ const end=today0(), start=addDays(end, -29); return {start: dateISO(start), end: dateISO(end)}; }
+function setDailyControlsFromRange(range){ el("rangeStart").value = range.start; el("rangeEnd").value = range.end; }
+function computeRangeFromPreset(preset){
+  const end=today0();
+  if(preset==="mtd"){ const start=startOfMonth(); return {start: dateISO(start), end: dateISO(end)}; }
+  if(preset==="last_month"){ const start=addDays(end, -29); return {start: dateISO(start), end: dateISO(end)}; }
+  const s=el("rangeStart").value, e=el("rangeEnd").value; if(!s || !e) return getDefaultDailyRange(); return {start: s, end: e};
+}
+function listDatesInclusive(startISO,endISO){ const out=[]; let d=parseISO(startISO); const end=parseISO(endISO); while(d<=end){ out.push(dateISO(d)); d=addDays(d,1); } return out; }
+function exportDailyCSV(){
+  const range=dailyRange || getDefaultDailyRange(), dates=listDatesInclusive(range.start, range.end);
+  let vehicles = filterVehicles(DB.vehicles);
+  const q=getSearchTerm(); if(q) vehicles = vehicles.filter(v=> [v.vin,v.type_make_model,v.plate,v.deal_number||"",v.vehicle_location].join(" ").toLowerCase().includes(q));
+  const lines=[["vin","vehicle","date","daily_rate","annual_rate","driver_dl","driver_customer_id","rate_source"].join(",")];
+  for(const v of vehicles){
+    for(const dt of dates){
+      const rec = (v.daily_map_120d && v.daily_map_120d[dt]) ? v.daily_map_120d[dt] : null;
+      const daily = rec ? rec.daily : (v.insurance_daily_rate || 0), annual = rec ? rec.annual : (v.insurance_annual_rate || 0);
+      const dl = rec ? (rec.dl || "") : "", driverId = rec ? (rec.driverId || "") : "", src = rec ? (rec.source || "") : (v.insurance_rate_source || "");
+      lines.push([`"${v.vin}"`, `"${v.type_make_model.replace(/"/g,'""')}"`, dt, daily.toFixed(2), Math.round(annual), `"${dl}"`, `"${driverId}"`, `"${src}"`].join(","));
+    }
+  }
+  const blob=new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`daily_spend_${range.start}_to_${range.end}.csv`; a.click(); URL.revokeObjectURL(a.href); toast("Exported daily spend CSV.");
+}
+
+function footerFor(total,label,totalPages){
   el("countText").textContent = `${total.toLocaleString()} ${label} • showing ${(total?((page-1)*pageSize+1):0).toLocaleString()}–${Math.min(page*pageSize,total).toLocaleString()}`;
   el("pageText").textContent = `Page ${page} / ${totalPages}`;
   el("prevPage").disabled = (page<=1); el("nextPage").disabled = (page>=totalPages);
 }
 
-// ---------- Detail Modals ----------
-function openModal(type, id) {
-  const modal = el("modalBackdrop");
-  const body = el("modalBody");
-  
-  if (type === 'customer') {
-    const c = DB.customers.find(x => x.dl_number === id);
-    el("modalTitle").textContent = "Customer Record";
-    el("modalSub").textContent = `Driver License: ${c.dl_number}`;
-    
-    body.innerHTML = `
-      <div class="kv-grid">
-        <div class="kv-item"><div class="k">Full Name</div><div class="v">${escapeHTML(c.name)}</div></div>
-        <div class="kv-item"><div class="k">Underwriting Status</div><div class="v">${c.missing_uw_rate ? '<span style="color:var(--bad)">Missing ($0 / Base Rate applied)</span>' : '<span style="color:var(--good)">Approved</span>'}</div></div>
-        <div class="kv-item"><div class="k">Annual Rate</div><div class="v">${money(c.insurance_annual_rate)} / yr</div></div>
-        <div class="kv-item"><div class="k">Calculated Daily</div><div class="v">${money2(c.insurance_daily_rate)} / day</div></div>
-        <div class="kv-item"><div class="k">Assigned VIN</div><div class="v mono">${c.vin || 'None'}</div></div>
-        <div class="kv-item"><div class="k">Deal Dates</div><div class="v">${c.deal_start||'—'} to ${c.deal_end||'—'}</div></div>
-      </div>
-    `;
-  } else {
-    const v = DB.vehicles.find(x => x.vin === id);
-    el("modalTitle").textContent = "Vehicle Record";
-    el("modalSub").textContent = `VIN: ${v.vin} • ${escapeHTML(v.type_make_model)}`;
-    
-    body.innerHTML = `
-      <div class="kv-grid">
-        <div class="kv-item"><div class="k">Status & Location</div><div class="v">${v.has_active_deal ? 'Active' : 'Stock/Vacant'} • ${escapeHTML(v.vehicle_location)}</div></div>
-        <div class="kv-item"><div class="k">Assigned Driver DL</div><div class="v mono">${v.driver_dl || 'None'}</div></div>
-        <div class="kv-item"><div class="k">Insurance Rate Source</div><div class="v">${v.insurance_rate_source}</div></div>
-        <div class="kv-item"><div class="k">Current Daily Cost</div><div class="v"><b>${money2(v.insurance_daily_rate)}</b></div></div>
-        <div class="kv-item"><div class="k">License Plate</div><div class="v mono">${v.plate}</div></div>
-        <div class="kv-item"><div class="k">Deal Dates</div><div class="v">${v.deal_start||'—'} to ${v.deal_end||'—'}</div></div>
-      </div>
-    `;
+// ---------- Charts ----------
+function drawLineChart(canvas, series){
+  const ctx=canvas.getContext("2d"), w=canvas.width, h=canvas.height; ctx.clearRect(0,0,w,h);
+  if(!series || series.length===0) return null;
+  const ys=series.map(p=>p.y), minV=Math.min(...ys), maxV=Math.max(...ys), padV=(maxV-minV)===0?1:(maxV-minV)*0.12, lo=minV-padV, hi=maxV+padV;
+  ctx.globalAlpha=0.85; ctx.strokeStyle="rgba(231,236,255,.18)"; ctx.lineWidth=1;
+  for(let g=1;g<=3;g++){ const y=(h-20)*(g/4)+8; ctx.beginPath(); ctx.moveTo(8,y); ctx.lineTo(w-8,y); ctx.stroke(); }
+  ctx.globalAlpha=1; ctx.strokeStyle="rgba(106,228,255,.95)"; ctx.lineWidth=2; ctx.beginPath();
+  for(let i=0;i<series.length;i++){ const x=8+(i/(series.length-1))*(w-16), y=8+(1-((series[i].y-lo)/(hi-lo)))*(h-28); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); } ctx.stroke();
+  ctx.strokeStyle="rgba(255,209,102,.65)"; ctx.lineWidth=1; let dlChanges=0;
+  for(let i=0;i<series.length;i++){ if(series[i].dlChanged){ dlChanges++; const x=8+(i/(series.length-1))*(w-16); ctx.beginPath(); ctx.moveTo(x, 10); ctx.lineTo(x, h-22); ctx.stroke(); } }
+  const lastIdx=series.length-1, lx=8+(lastIdx/(series.length-1))*(w-16), ly=8+(1-((series[lastIdx].y-lo)/(hi-lo)))*(h-28); ctx.fillStyle="rgba(155,140,255,.95)"; ctx.beginPath(); ctx.arc(lx,ly,3.8,0,Math.PI*2); ctx.fill();
+  return {minV, maxV, lastV: series[lastIdx].y, dlChanges};
+}
+function openPlotModal(vin){
+  const v=DB.index.vehiclesByVIN[vin]; if(!v) return;
+  const range=dailyRange || getDefaultDailyRange(), dates=listDatesInclusive(range.start, range.end), series=[]; let lastDL=null;
+  for(let i=0;i<dates.length;i++){
+    const rec = v.daily_map_120d ? v.daily_map_120d[dates[i]] : null;
+    const daily = rec ? rec.daily : v.insurance_daily_rate, dl = rec ? (rec.dl || null) : null;
+    series.push({x:i, y: daily, dlChanged: (i>0 && dl !== lastDL)}); lastDL = dl;
   }
-  
-  modal.style.display = "flex";
+  el("modalTitle").textContent = `${v.type_make_model}`; el("modalSub").textContent = `VIN ${v.vin} • Range ${range.start} → ${range.end}`;
+  const stats=drawLineChart(el("modalChart"), series);
+  el("mMin").textContent = stats ? money2(stats.minV) : "—"; el("mMax").textContent = stats ? money2(stats.maxV) : "—"; el("mLast").textContent = stats ? money2(stats.lastV) : "—"; el("mDL").textContent = stats ? String(stats.dlChanges) : "—";
+  el("modalBackdrop").style.display="flex";
+}
+function closePlotModal(){ el("modalBackdrop").style.display="none"; }
+
+// ---------- Rendering Tables ----------
+function renderTable(){
+  const table=el("table"), wrap=el("tableWrap");
+  el("leftHeader").style.display = (view==="opportunities") ? "flex" : "none";
+  if(view==="opportunities") renderOppHeader();
+  el("dailyControls").style.display = (view==="daily") ? "flex" : "none";
+
+  let rows=[], paged, headers, bodyHTML;
+
+  if(view==="customers"){
+    wrap.classList.remove("matrixWrap");
+    rows = filterCustomers(DB.customers); paged = paginate(rows);
+    headers = `<thead><tr><th style="width:84px">ID</th><th>Name</th><th style="width:150px">DL #</th><th style="width:150px">TLC #</th><th style="width:170px">UW rate</th><th style="width:120px">Tier</th><th style="width:160px">Pipeline</th><th style="width:150px">Active deal</th><th style="width:140px">Deal #</th><th style="width:200px">VIN</th></tr></thead>`;
+    bodyHTML = `<tbody>` + paged.slice.map(c=>{
+      const pipeline=c.has_active_deal?`<span class="small">—</span>`:`<span class="pill"><span class="dot"></span>${escapeHTML(c.lead_stage||"Lead")}</span>`;
+      return `<tr class="${selectedKey===c.id?"selected":""}" data-key="${c.id}"><td class="mono">${c.id}</td><td>${escapeHTML(c.name)}</td><td class="mono">${c.dl_number}</td><td class="mono">${c.tlc_number}</td><td>${money(c.insurance_annual_rate)} <span class="small">/yr</span></td><td>${tierPill(c.rate_tier)}</td><td>${pipeline}</td><td>${dealPill(c.has_active_deal)}</td><td class="mono">${c.deal_number?c.deal_number:"<span class='small'>—</span>"}</td><td class="mono">${c.vin?c.vin:"<span class='small'>—</span>"}</td></tr>`;
+    }).join("") + `</tbody>`;
+    table.innerHTML = headers + bodyHTML; footerFor(paged.total,"customers",paged.totalPages);
+    table.querySelectorAll("tbody tr").forEach(tr=>{ tr.addEventListener("click", ()=>{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });
+  } else if(view==="vehicles"){
+    wrap.classList.remove("matrixWrap");
+    rows = filterVehicles(DB.vehicles); paged = paginate(rows);
+    headers = `<thead><tr><th style="width:84px">ID</th><th style="min-width:220px">Vehicle</th><th style="width:220px">VIN</th><th style="width:120px">Plate</th><th style="width:140px">Deal</th><th style="width:140px">Ends</th><th style="width:140px">Location</th><th style="width:120px">Switches</th><th style="width:190px">Insurance daily</th><th style="width:110px">Tier</th></tr></thead>`;
+    bodyHTML = `<tbody>` + paged.slice.map(v=>{
+      const dealStatus=v.has_active_deal?"active":(v.last_driver_customer_id?"ended":"none");
+      const dealP=dealStatus==="active"?`<span class="pill good"><span class="dot"></span>Active</span>`:dealStatus==="ended"?`<span class="pill warn"><span class="dot"></span>Ended</span>`:`<span class="pill"><span class="dot"></span>None</span>`;
+      const endsSoon=v.has_active_deal && dealEndsSoon(v.deal_end_date), endCell=v.deal_end_date?`<span class="mono">${v.deal_end_date}</span> ${endsSoon?`<span class="pill warn" style="margin-left:6px"><span class="dot"></span>≤30d</span>`:""}`:`<span class="small">—</span>`;
+      const switchesP=(v.drivers_switched_ytd>=3)?`<span class="pill bad"><span class="dot"></span>${v.drivers_switched_ytd}</span>`:`<span class="pill"><span class="dot"></span>${v.drivers_switched_ytd}</span>`;
+      return `<tr class="${selectedKey===v.vin?"selected":""}" data-key="${v.vin}"><td class="mono">${v.id}</td><td>${escapeHTML(v.type_make_model)}</td><td class="mono">${v.vin}</td><td class="mono">${v.plate}</td><td>${dealP}</td><td>${endCell}</td><td>${escapeHTML(v.vehicle_location)}</td><td>${switchesP}</td><td>${money2(v.insurance_daily_rate)} <span class="small">/day</span> ${ratePill(v.insurance_rate_source)}</td><td>${tierPill(rateTier(v.insurance_annual_rate))}</td></tr>`;
+    }).join("") + `</tbody>`;
+    table.innerHTML = headers + bodyHTML; footerFor(paged.total,"vehicles",paged.totalPages);
+    table.querySelectorAll("tbody tr").forEach(tr=>{ tr.addEventListener("click", ()=>{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });
+  } else if(view==="opportunities"){
+    wrap.classList.remove("matrixWrap");
+    let oppRows = OPPS;
+    if(oppSection==="vacant") oppRows = oppRows.filter(o=>o.kind==="Vacant");
+    if(oppSection==="expiring") oppRows = oppRows.filter(o=>o.kind.startsWith("Expiring"));
+    if(oppSection==="hightier") oppRows = oppRows.filter(o=>o.kind.startsWith("High-tier"));
+    if(tierFilter!=="all") oppRows = oppRows.filter(o => (o.lead_tier || "High") === tierFilter);
+    const q=getSearchTerm(); if(q) oppRows = oppRows.filter(o=> [o.kind,o.vehicle,o.vin,o.location,o.lead_name||"",o.lead_id||"",o.lead_tier||"",o.current_tier].join(" ").toLowerCase().includes(q));
+    paged = paginate(oppRows);
+    headers = `<thead><tr><th style="width:160px">Type</th><th>Vehicle</th><th style="width:220px">VIN</th><th style="width:140px">Ends</th><th style="width:130px">Current /day</th><th style="width:110px">Current tier</th><th style="width:160px">Suggested lead</th><th style="width:100px">Lead tier</th><th style="width:140px">Est. save /day</th></tr></thead>`;
+    bodyHTML = `<tbody>` + paged.slice.map(o=>{
+      const typeP = o.kind==="Vacant" ? `<span class="pill bad"><span class="dot"></span>Vacant</span>` : o.kind.startsWith("Expiring") ? `<span class="pill warn"><span class="dot"></span>Expiring</span>` : `<span class="pill"><span class="dot"></span>High-tier</span>`;
+      const endCell = o.deal_end ? `<span class="mono">${o.deal_end}</span>` : `<span class="small">—</span>`;
+      const leadName = o.lead_name ? escapeHTML(o.lead_name) : "<span class='small'>No low/med lead left</span>", leadTier = o.lead_tier ? tierPill(o.lead_tier) : "<span class='small'>—</span>";
+      const saveDay = (o.savings_daily!=null) ? money2(o.savings_daily) : "<span class='small'>—</span>";
+      return `<tr class="${selectedKey===o.vin?"selected":""}" data-key="${o.vin}"><td>${typeP}</td><td>${escapeHTML(o.vehicle)}<div class="small">${escapeHTML(o.location)}</div></td><td class="mono">${o.vin}</td><td>${endCell}</td><td>${money2(o.current_daily)} <span class="small">/day</span></td><td>${tierPill(o.current_tier)}</td><td>${leadName}<div class="small mono">${o.lead_id || ""}</div></td><td>${leadTier}</td><td>${saveDay}</td></tr>`;
+    }).join("") + `</tbody>`;
+    table.innerHTML = headers + bodyHTML; footerFor(paged.total,"opportunities",paged.totalPages);
+    table.querySelectorAll("tbody tr").forEach(tr=>{ tr.addEventListener("click", ()=>{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });
+  } else {
+    // Daily Spend Matrix with sticky cols
+    wrap.classList.add("matrixWrap");
+    const range = dailyRange || getDefaultDailyRange(), dates = listDatesInclusive(range.start, range.end);
+    rows = filterVehicles(DB.vehicles);
+    const q=getSearchTerm(); if(q) rows = rows.filter(v=> [v.vin,v.type_make_model,v.plate,v.deal_number||"",v.vehicle_location].join(" ").toLowerCase().includes(q));
+    paged = paginate(rows);
+    const dateHeaders = dates.map(d=>`<th class="mono" style="width: 110px">${d.slice(5,7)}-${d.slice(8,10)}</th>`).join("");
+    headers = `<thead><tr><th style="width: 66px">Plot</th><th style="width: 220px">Vehicle</th><th style="width: 220px">VIN</th><th style="width: 110px">Tier</th>${dateHeaders}</tr></thead>`;
+    bodyHTML = `<tbody>` + paged.slice.map(v=>{
+      const t = rateTier(v.insurance_annual_rate);
+      const rowCells = dates.map(dt=>{
+        const rec = v.daily_map_120d ? v.daily_map_120d[dt] : null;
+        const daily = rec ? rec.daily : v.insurance_daily_rate, dl = rec ? rec.dl : null;
+        const cls = (!dl && v.insurance_rate_source==="base") ? "vacant" : (t==="High" ? "high" : "");
+        return `<td><div class="cell ${cls}"><div class="p">${money2(daily)}</div><div class="dl">${escapeHTML(fmtShortDL(dl))}</div></div></td>`;
+      }).join("");
+      return `<tr class="${selectedKey===v.vin?"selected":""}" data-key="${v.vin}"><td><button class="btn secondary miniBtn" data-plot="${v.vin}">Plot</button></td><td>${escapeHTML(v.type_make_model)}<div class="small">${escapeHTML(v.vehicle_location)}</div></td><td class="mono">${v.vin}</td><td>${tierPill(t)}</td>${rowCells}</tr>`;
+    }).join("") + `</tbody>`;
+    table.innerHTML = headers + bodyHTML; footerFor(paged.total, "vehicles", paged.totalPages);
+    table.querySelectorAll("tbody tr").forEach(tr=>{ tr.addEventListener("click", (e)=>{ if(e.target && e.target.getAttribute && e.target.getAttribute("data-plot")) return; selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });
+    table.querySelectorAll("[data-plot]").forEach(btn=>{ btn.addEventListener("click", (e)=>{ e.stopPropagation(); openPlotModal(btn.getAttribute("data-plot")); }); });
+  }
 }
 
-el("modalClose").addEventListener("click", () => el("modalBackdrop").style.display="none");
-el("modalBackdrop").addEventListener("click", (e) => { if(e.target===el("modalBackdrop")) el("modalBackdrop").style.display="none"; });
+// ---------- Restored & Enhanced Details Pane ----------
+function renderDetail(){
+  const pane=el("detail");
+  if(!selectedKey){
+    pane.innerHTML = `<div class="card"><h2>Details</h2><div class="muted">Click a row to inspect the record.</div><div class="divider"></div><div class="small">In <b>Daily Spend</b>, use "Plot" to open a time series. Use <b>Opportunities</b> to match low-rate leads to vacant/expiring vehicles and see estimated savings.</div></div>`;
+    return;
+  }
+  
+  if(view==="customers"){
+    const c=DB.customers.find(x=>x.id===selectedKey); if(!c){selectedKey=null; return renderDetail();}
+    const vehicle = c.vin ? DB.index.vehiclesByVIN[c.vin] : null;
+    pane.innerHTML = `<div class="card">
+      <h2>${escapeHTML(c.name)}</h2><div class="muted">Customer <span class="mono">${c.id}</span> • Tier ${tierPill(c.rate_tier)}</div>
+      <div class="kv">
+        <div class="k">DL #</div><div class="v mono">${c.dl_number||"—"}</div>
+        <div class="k">TLC #</div><div class="v mono">${c.tlc_number||"—"}</div>
+        <div class="k">UW daily rate</div><div class="v">${money2(c.insurance_daily_rate)} / day</div>
+        <div class="k">Pipeline stage</div><div class="v">${c.has_active_deal ? "—" : escapeHTML(c.lead_stage||"Lead")}</div>
+        <div class="k">Active deal</div><div class="v">${dealPill(c.has_active_deal)}</div>
+        <div class="k">Deal #</div><div class="v mono">${c.deal_number || "—"}</div>
+        <div class="k">VIN</div><div class="v mono">${c.vin || "—"}</div>
+      </div>
+      ${vehicle ? `<div class="divider"></div><div class="small">Linked vehicle</div><div style="margin-top:8px"><span class="linkish" id="jumpVehicle">${escapeHTML(vehicle.type_make_model)}</span><div class="muted mono" style="margin-top:4px">${vehicle.vin}</div></div>` : `<div class="divider"></div><div class="small">No linked vehicle. Match this lead to a vacant or expiring vehicle to realize savings.</div>`}
+    </div>`;
+    const jump=document.getElementById("jumpVehicle");
+    if(jump) jump.addEventListener("click", ()=>{ view="vehicles"; setActiveTab(); selectedKey=vehicle.vin; page=1; renderTierStrip(); renderTable(); renderDetail(); });
+  
+  } else {
+    // Handling Vehicles & Opportunities
+    const v=DB.index.vehiclesByVIN[selectedKey]; if(!v){selectedKey=null; return renderDetail();}
+    const current=v.current_driver_customer_id ? DB.index.customersById[v.current_driver_customer_id] : null;
+    const last=v.last_driver_customer_id ? DB.index.customersById[v.last_driver_customer_id] : null;
+    const dealStatus=v.has_active_deal ? "Active" : (v.last_driver_customer_id ? "Ended" : "None");
+    
+    // Build Match Candidates dropdown
+    const candidates = DB.customers.filter(c=>!c.has_active_deal && c.rate_tier!=="High").sort((a,b)=>a.insurance_annual_rate-b.insurance_annual_rate).slice(0, 30);
+    const options = [`<option value="">Select lead to simulate match…</option>`].concat(candidates.map(c=>`<option value="${c.id}">${escapeHTML(c.name)} (${c.id}) • ${c.rate_tier} • ${money2(c.insurance_daily_rate)}/day</option>`)).join("");
 
-// ---------- Interactions ----------
-function refreshAll(){ renderKPIs(); renderTable(); }
+    pane.innerHTML = `<div class="card">
+      <h2>${escapeHTML(v.type_make_model)}</h2><div class="muted">VIN <span class="mono">${v.vin}</span> • Tier ${tierPill(rateTier(v.insurance_annual_rate))}</div>
+      <div class="kv">
+        <div class="k">Insurance daily</div><div class="v">${money2(v.insurance_daily_rate)} / day ${ratePill(v.insurance_rate_source)}</div>
+        <div class="k">Deal status</div><div class="v">${dealStatus}${v.deal_status_raw&&v.deal_status_raw!==dealStatus?" <span class='small'>("+escapeHTML(v.deal_status_raw)+")</span>":""}</div>
+        <div class="k">Deal #</div><div class="v mono">${v.deal_number||"—"}</div>
+        <div class="k">Deal dates</div><div class="v mono">${v.deal_start_date||"—"} → ${v.deal_end_date||"—"}</div>
+        <div class="k">Channel</div><div class="v">${escapeHTML(v.sales_channel||"—")}</div>
+        <div class="k">Location</div><div class="v">${escapeHTML(v.vehicle_location)}</div>
+        <div class="k">Color</div><div class="v">${escapeHTML(v.color||"—")}</div>
+        <div class="k">Plate</div><div class="v mono">${escapeHTML(v.plate||"—")}${v.plate_status?" <span class='small'>("+escapeHTML(v.plate_status)+")</span>":""}</div>
+        <div class="k">Diamond</div><div class="v mono">${escapeHTML(v.diamond||"—")} ${v.diamond_expiration_date?diamondPill(v.diamond_expiration_date):""}</div>
+      </div>
+      <div class="divider"></div>
+      ${current ? `<div class="small">Current driver</div><div style="margin-top:8px"><span class="linkish" id="jumpCustomer">${escapeHTML(current.name)}</span><div class="muted mono" style="margin-top:4px">${current.id} • ${tierPill(current.rate_tier)}</div></div>` : last ? `<div class="small">Last driver</div><div style="margin-top:8px"><span class="linkish" id="jumpCustomer">${escapeHTML(last.name)}</span><div class="muted mono" style="margin-top:4px">${last.id} • ${tierPill(last.rate_tier)}</div></div>` : `<div class="small"><b>Vacant</b> (no driver history) — paying base rate daily.</div>`}
+      
+      <div class="divider"></div>
+      <div class="small"><b>Match simulator</b> — predict savings</div>
+      <div style="margin-top:8px">
+        <select id="matchLead" style="width:100%; min-width:0">${options}</select>
+        <div id="matchOut" class="small" style="margin-top:8px">Select a lead to project daily rate.</div>
+      </div>
 
-el("tabCustomers").addEventListener("click", ()=>{view="customers"; page=1; el("tabCustomers").classList.add("active"); el("tabVehicles").classList.remove("active"); el("tabDaily").classList.remove("active"); renderTable();});
-el("tabVehicles").addEventListener("click", ()=>{view="vehicles"; page=1; el("tabVehicles").classList.add("active"); el("tabCustomers").classList.remove("active"); el("tabDaily").classList.remove("active"); renderTable();});
-el("tabDaily").addEventListener("click", ()=>{view="daily"; page=1; el("tabDaily").classList.add("active"); el("tabVehicles").classList.remove("active"); el("tabCustomers").classList.remove("active"); renderTable();});
+      <div class="canvasWrap" style="margin-top:14px">
+        <div class="small" style="display:flex; justify-content:space-between; align-items:center;">
+          <b>Rate History (Last 60 days)</b> <button class="btn secondary miniBtn" id="openPlot2">Expand</button>
+        </div>
+        <canvas id="rateChart" width="360" height="90" style="margin-top:8px"></canvas>
+      </div>
+    </div>`;
 
-["search","filterDeal", "filterMissingUW"].forEach(id=>{ 
-  el(id).addEventListener("input", ()=>{page=1; renderTable();}); 
-  el(id).addEventListener("change", ()=>{page=1; renderTable();}); 
-});
+    // Jump interactions
+    const jump=document.getElementById("jumpCustomer");
+    if(jump){
+      const target=current || last;
+      jump.addEventListener("click", ()=>{ view="customers"; setActiveTab(); selectedKey=target.id; page=1; renderTierStrip(); renderTable(); renderDetail(); });
+    }
 
-el("prevPage").addEventListener("click", ()=>{page--; renderTable();}); 
-el("nextPage").addEventListener("click", ()=>{page++; renderTable();});
+    // Match Simulator Interaction
+    const sel=document.getElementById("matchLead");
+    if(sel){
+      sel.addEventListener("change", ()=>{
+        const id=sel.value, out=el("matchOut");
+        if(!id){ out.textContent="Select a lead to project daily rate."; return; }
+        const c=DB.index.customersById[id], projected=c.insurance_daily_rate, save=Math.max(0, v.insurance_daily_rate - projected);
+        out.innerHTML = `Projected daily: <b>${money2(projected)}</b> • Current: <b>${money2(v.insurance_daily_rate)}</b><br/>Est. savings: <b><span style="color:var(--good)">${money2(save)}</span></b>/day • <b>${money(Math.round(save*30))}</b> over 30 days.`;
+      });
+    }
 
-el("btnExportCSV").addEventListener("click", () => {
-  toast("Export logic will loop over DB.vehicles... (Impl omitted for MVP brevity)");
-});
+    // Plot Interactions
+    const b=document.getElementById("openPlot2");
+    if(b) b.addEventListener("click", ()=> openPlotModal(v.vin));
+    
+    // Draw mini sparkline
+    const c=document.getElementById("rateChart");
+    if(c && v.rate_history_120d) {
+      // just take last 60 days for mini chart to fit the pane better
+      const slice = v.rate_history_120d.slice(-60).map(x=>({y: x.daily, dlChanged: x.switched}));
+      drawLineChart(c, slice);
+    }
+  }
+}
 
+// ---------- Initialization ----------
+function setActiveTab(){ el("tabCustomers").classList.toggle("active", view==="customers"); el("tabVehicles").classList.toggle("active", view==="vehicles"); el("tabOpp").classList.toggle("active", view==="opportunities"); el("tabDaily").classList.toggle("active", view==="daily"); }
+function populateLocationFilter(){ const s=el("filterLocation"), uniq=Array.from(new Set(DB.vehicles.map(v=>v.vehicle_location))).sort(); s.innerHTML = `<option value="all">Location: All</option>` + uniq.map(v=>`<option value="${v}">${v}</option>`).join(""); }
+function exportJSON(){ const payload={meta:DB.meta, customers:DB.customers, vehicles:DB.vehicles}, blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}), a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`fleet_dashboard_export.json`; a.click(); URL.revokeObjectURL(a.href); toast("Exported JSON (customers + vehicles)."); }
+function refreshAll(){ renderKPIs(); renderAlerts(); renderTierStrip(); populateLocationFilter(); renderTable(); renderDetail(); updateDataChip(); }
+
+function init(){
+  // Try to load from localStorage
+  const stored=loadCSVsFromStorage();
+  if(stored){
+    try{
+      const custRows=parseCSV(stored.custText);
+      const vehRows=parseCSV(stored.vehText);
+      DB=buildDB(custRows,vehRows);
+    }catch(e){
+      console.warn("Failed to load stored CSVs:",e);
+    }
+  }
+
+  if(DB){
+    OPPS=buildOpportunities(); dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange);
+  }
+
+  // Wire up tabs
+  el("tabCustomers").addEventListener("click", ()=>{view="customers"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
+  el("tabVehicles").addEventListener("click", ()=>{view="vehicles"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
+  el("tabOpp").addEventListener("click", ()=>{view="opportunities"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
+  el("tabDaily").addEventListener("click", ()=>{view="daily"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
+  ["search","filterDeal","filterLocation"].forEach(id=>{ el(id).addEventListener("input", ()=>{page=1; selectedKey=null; renderTable(); renderDetail();}); el(id).addEventListener("change", ()=>{page=1; selectedKey=null; renderTable(); renderDetail();}); });
+  el("prevPage").addEventListener("click", ()=>{page--; renderTable();}); el("nextPage").addEventListener("click", ()=>{page++; renderTable();});
+  el("btnExport").addEventListener("click", exportJSON);
+  el("rangePreset").addEventListener("change", ()=>{ const preset=el("rangePreset").value; if(preset==="custom") return; dailyRange = computeRangeFromPreset(preset); setDailyControlsFromRange(dailyRange); page=1; selectedKey=null; if(view==="daily"){ renderTable(); renderDetail(); } });
+  el("btnApplyRange").addEventListener("click", ()=>{ dailyRange = computeRangeFromPreset(el("rangePreset").value); page=1; selectedKey=null; if(view==="daily"){ renderTable(); renderDetail(); toast(`Applied range ${dailyRange.start} → ${dailyRange.end}`); } });
+  el("btnExportCSV").addEventListener("click", exportDailyCSV);
+  el("modalClose").addEventListener("click", closePlotModal); el("modalBackdrop").addEventListener("click", (e)=>{ if(e.target===el("modalBackdrop")) closePlotModal(); }); document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") closePlotModal(); });
+  setupUploadUI();
+  setActiveTab();
+
+  if(DB){
+    refreshAll();
+  } else {
+    // No data yet — show upload modal automatically
+    el("uploadBackdrop").style.display="flex";
+    el("kpis").innerHTML=`<div class="card" style="grid-column:1/-1;text-align:center;padding:30px"><h2>Welcome</h2><div class="muted">Upload your Customers and Vehicles CSVs to get started.</div></div>`;
+  }
+}
+init();
 </script>
 </body>
 </html>
-
-```
