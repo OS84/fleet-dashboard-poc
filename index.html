@@ -163,20 +163,20 @@
   <div class="app">
     <header>
       <div class="title">
-        <h1>Fleet / Customers / Insurance — POC (V4 Final)</h1>
+        <h1>Fleet / Customers / Insurance — Dashboard</h1>
         <div class="sub">
           Constraints enforced: <b>All vehicles have insurance at all times</b>. Rate source is always:
           <b>driver rate (active deal)</b> → <b>last driver rate (ended deal)</b> → <b>base rate (no driver history)</b>.
-          V4 features the Daily Spend matrix with sticky columns, and full Match Simulator capabilities in the details pane.
+          Daily Spend matrix with sticky columns and Match Simulator in the details pane.
         </div>
         <div class="chiprow">
-          <div class="chip">Mock DB: generated in-browser</div>
+          <div class="chip">Production data: loaded from CSV</div>
           <div class="chip">Daily matrix: rate + DL per VIN per day</div>
           <div class="chip">Match Simulator enabled</div>
         </div>
       </div>
       <div class="row">
-        <button class="btn secondary" id="btnRegenerate">Regenerate mock data</button>
+        <button class="btn secondary" id="btnRegenerate">Reload data</button>
         <button class="btn" id="btnExport">Export JSON</button>
       </div>
     </header>
@@ -277,9 +277,6 @@
 
 <script>
 // ---------- Core Utils ----------
-function mulberry32(seed){return function(){let t=seed+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
-function randInt(rng,min,max){return Math.floor(rng()*(max-min+1))+min}
-function pick(rng,arr){return arr[Math.floor(rng()*arr.length)]}
 function pad(n,len){return String(n).padStart(len,'0')}
 function today0(){const d=new Date();d.setHours(0,0,0,0);return d}
 function startOfYear(){const d=today0();d.setMonth(0,1);return d}
@@ -303,210 +300,188 @@ function ratePill(source){ if(source==="driver") return `<span class="pill good"
 function diamondPill(expISO){const d=new Date(expISO), now=today0(), diff=Math.round((d-now)/86400000); if(diff<0) return `<span class="pill bad"><span class="dot"></span>Expired</span>`; if(diff<=30) return `<span class="pill warn"><span class="dot"></span>Expiring</span>`; return `<span class="pill good"><span class="dot"></span>Valid</span>`;}
 function dealEndsSoon(endISO){ if(!endISO) return false; const end=new Date(endISO), now=today0(); const diff=Math.round((end-now)/86400000); return diff>=0 && diff<=30; }
 
-// ---------- Mock Data Generation (Retained from V3) ----------
-const MAKES=[{make:"Toyota",models:["Camry","Corolla","RAV4","Highlander","Prius"]},{make:"Honda",models:["Civic","Accord","CR-V","Pilot"]},{make:"Nissan",models:["Altima","Sentra","Rogue","Maxima"]},{make:"Hyundai",models:["Elantra","Sonata","Tucson","Santa Fe"]},{make:"Kia",models:["Forte","K5","Sportage","Sorento"]},{make:"Chevrolet",models:["Malibu","Impala","Equinox"]},{make:"Ford",models:["Fusion","Escape","Edge"]},{make:"Volkswagen",models:["Jetta","Passat","Tiguan"]}];
-const LOCATIONS=["with driver","bodyshop","out for repo"];
-const CHANNELS=["Rental","Package"];
-function genVIN(rng){const chars="ABCDEFGHJKLMNPRSTUVWXYZ0123456789";let s="";for(let i=0;i<17;i++) s+=chars[Math.floor(rng()*chars.length)];return s;}
-function genPlate(rng){const letters="ABCDEFGHJKLMNPRSTUVWXYZ";let a="";for(let i=0;i<3;i++) a+=letters[Math.floor(rng()*letters.length)];return `${a}-${pad(randInt(rng,0,9999),4)}`;}
-function genDL(rng){return "D-"+pad(randInt(rng,0,99999999),8)}
-function genTLC(rng){return "T"+pad(randInt(rng,0,99999999),8)}
-function genName(rng){
-  const first=["Avi","Noam","Daniel","Yonatan","Eitan","Lior","Itai","Gil","Nadav","Oren","Omer","Tomer","Amir","Tal","Shai","Yael","Maya","Dana","Noa","Shira","Leah","Roni","Avital","Gaya"];
-  const last=["Cohen","Levi","Mizrahi","Peretz","Biton","Friedman","Goldberg","Kaplan","Shamir","Rosen","Katz","Dahan","Amar","Ben-David","Azoulay","Golan","Haddad","Barak","Nissan","Sasson","Dayan","Sharabi","Eliasi"];
-  const company=["Metro","City","Prime","Diamond","Liberty","Swift","Everest","Atlas","BlueLine","Urban","Summit","Iron","Nova","Orion"];
-  if(rng()<0.22) return `${pick(rng,company)} ${pick(rng,["Fleet","Transport","Mobility","Cars","Rentals","Logistics"])} LLC`;
-  return `${pick(rng,first)} ${pick(rng,last)}`;
+// ---------- CSV Parsing & Production Data Loading ----------
+const BASE_RATE_ANNUAL=8200;
+function parseCSV(text){
+  const lines=[], rows=[];
+  let cur="", inQ=false;
+  const cells=[];
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQ){ if(ch==='"'&&text[i+1]==='"'){cur+='"';i++;}else if(ch==='"'){inQ=false;}else{cur+=ch;} }
+    else{ if(ch==='"'){inQ=true;}else if(ch===','){cells.push(cur);cur="";}else if(ch==='\n'||ch==='\r'){if(cur||cells.length){cells.push(cur);lines.push([...cells]);}cells.length=0;cur="";if(ch==='\r'&&text[i+1]==='\n')i++;}else{cur+=ch;} }
+  }
+  if(cur||cells.length){cells.push(cur);lines.push([...cells]);}
+  if(lines.length<2)return[];
+  const hdr=lines[0].map(h=>h.trim());
+  for(let r=1;r<lines.length;r++){
+    const obj={};
+    for(let c=0;c<hdr.length;c++) obj[hdr[c]]=(lines[r][c]||"").trim();
+    rows.push(obj);
+  }
+  return rows;
 }
-function genDiamond(rng){return "DIA-"+pad(randInt(rng,0,999999),6)}
-function fmtRateAnnual(n){return Math.round(n/10)*10}
-function buildRateHistory(rng, mode, baseAnnual, targetAnnual, switchesYTD){
+function parseDDMMYYYY(s){
+  if(!s)return null;
+  const parts=s.split("/");
+  if(parts.length!==3)return null;
+  const d=parseInt(parts[0],10),m=parseInt(parts[1],10),y=parseInt(parts[2],10);
+  if(!d||!m||!y)return null;
+  const dt=new Date(y,m-1,d);dt.setHours(0,0,0,0);
+  return dateISO(dt);
+}
+function buildFlatRateHistory(annual, daily, source, dl, driverId){
   const days=120, out=[];
-  const end=today0(), start=addDays(end, -(days-1));
-  const maxShown=clamp(switchesYTD,0,5);
-  const shown=(mode==="base")?0:randInt(rng,0,maxShown);
-  const switchOffsets=[];
-  for(let i=0;i<shown;i++) switchOffsets.push(randInt(rng,8,days-8));
-  switchOffsets.sort((a,b)=>a-b);
-  let segAnnual=(mode==="base")?baseAnnual:fmtRateAnnual(randInt(rng,6000,10000));
-  let next=0;
+  const end=today0(), start=addDays(end,-(days-1));
   for(let i=0;i<days;i++){
-    let switched=false;
-    if(next<switchOffsets.length && i===switchOffsets[next]){
-      segAnnual=fmtRateAnnual(randInt(rng,6000,10000));
-      switched=true;
-      next++;
-    }
-    if(i>=days-10) segAnnual=targetAnnual;
     const d=addDays(start,i);
-    const daily=Math.round((segAnnual/365)*100)/100;
-    out.push({date:dateISO(d), annual:segAnnual, daily, switched});
+    out.push({date:dateISO(d), annual, daily, switched:false});
   }
   return out;
 }
-function buildDriverTimeline(rng, vehicle, baseAnnual, customersById){
-  const history = vehicle.rate_history_120d || [];
-  const map = {};
-  if(history.length===0) return {mapByDate:map, dlChangesCount:0};
-
-  let dlChanges=0;
-  let currentDriverId = vehicle.current_driver_customer_id || null;
-  let lastDriverId = vehicle.last_driver_customer_id || null;
-
-  const changePoints = [];
-  if(vehicle.has_active_deal && currentDriverId && vehicle.drivers_switched_ytd>0){
-    const changes = clamp(vehicle.drivers_switched_ytd,1,4);
-    for(let i=0;i<changes;i++){ changePoints.push(randInt(rng,10,history.length-10)); }
-    changePoints.sort((a,b)=>a-b);
+function buildFlatDriverTimeline(vehicle, customersById){
+  const history=vehicle.rate_history_120d||[];
+  const map={};
+  if(history.length===0)return{mapByDate:map,dlChangesCount:0};
+  const driverId=vehicle.current_driver_customer_id||vehicle.last_driver_customer_id||null;
+  const c=driverId?customersById[driverId]:null;
+  const dl=c?c.dl_number:null;
+  const source=vehicle.insurance_rate_source;
+  for(const rec of history){
+    map[rec.date]={date:rec.date,daily:rec.daily,annual:rec.annual,dl,driverId,source};
   }
-  const altDrivers = [];
-  for(let i=0;i<changePoints.length;i++){
-    const alt = customersById["C"+pad(randInt(rng,1,1075),4)];
-    altDrivers.push(alt ? alt.id : currentDriverId);
-  }
-
-  let segIdx=-1;
-  let segDriverId=null;
-
-  for(let i=0;i<history.length;i++){
-    if(segIdx+1 < changePoints.length && i===changePoints[segIdx+1]){
-      segIdx++; segDriverId=altDrivers[segIdx]; dlChanges++;
-    }
-
-    let driverId=null, dl=null, annual=vehicle.insurance_annual_rate, source=vehicle.insurance_rate_source;
-
-    if(vehicle.has_active_deal){
-      driverId = segDriverId || currentDriverId;
-      const c = driverId ? customersById[driverId] : null;
-      dl = c ? c.dl_number : null;
-      annual = history[i].annual;
-      source="driver";
-    } else if(lastDriverId){
-      const c = customersById[lastDriverId];
-      dl = c ? c.dl_number : null;
-      annual = history[i].annual;
-      source="last_driver";
-    } else {
-      dl = null;
-      annual = baseAnnual;
-      source="base";
-    }
-
-    map[history[i].date] = {date: history[i].date, daily: history[i].daily, annual, dl, driverId, source};
-  }
-
-  return {mapByDate: map, dlChangesCount: dlChanges};
+  return{mapByDate:map,dlChangesCount:0};
 }
 
-function generateMockDB(seed){
-  const rng=mulberry32(seed);
-  const customersCount=1075, vehiclesCount=1000;
-  const customersWithoutDeal=randInt(rng,120,220);
-  const customersWithDeal=customersCount-customersWithoutDeal;
-  const vehiclesWithoutDriver=randInt(rng,70,150);
-  const vehiclesWithPotentialDeal=vehiclesCount-vehiclesWithoutDriver;
-  const activeDeals=Math.min(customersWithDeal, vehiclesWithPotentialDeal);
-  const endedDealsVehicles=randInt(rng,120,260);
-  const baseRateAnnual=8200;
+async function loadProductionDB(){
+  const resp=await fetch("data.csv");
+  if(!resp.ok)throw new Error("Failed to load data.csv: "+resp.status);
+  const text=await resp.text();
+  const rows=parseCSV(text);
+  if(rows.length===0)throw new Error("CSV is empty or malformed");
 
-  const vehicles=[], usedVIN=new Set();
-  for(let i=0;i<vehiclesCount;i++){
-    let vin=genVIN(rng); while(usedVIN.has(vin)) vin=genVIN(rng); usedVIN.add(vin);
-    const makeObj=pick(rng,MAKES), model=pick(rng,makeObj.models), year=randInt(rng,2016,2024);
-    const diamondExp=addDays(today0(), randInt(rng,-120,540));
-    vehicles.push({
-      id:"V"+pad(i+1,4), type_make_model:`${makeObj.make} ${model} ${year}`,
-      vin, plate: genPlate(rng), diamond: genDiamond(rng), diamond_expiration_date: dateISO(diamondExp),
-      has_active_deal:false, deal_number:null, deal_start_date:null, deal_end_date:null, sales_channel:null,
-      vehicle_location: pick(rng,LOCATIONS), different_drivers_ytd: randInt(rng,0,5), drivers_switched_ytd: 0,
-      insurance_annual_rate: baseRateAnnual, insurance_daily_rate: Math.round((baseRateAnnual/365)*100)/100,
-      insurance_rate_source:"base", current_driver_customer_id:null, last_driver_customer_id:null, last_driver_annual_rate:null,
-      rate_history_120d: [], status_changed_at: dateISO(addDays(today0(), -randInt(rng,0,30))),
-      daily_map_120d: null, dl_changes_120d: 0
-    });
+  const baseAnnual=BASE_RATE_ANNUAL;
+  const baseDailyRate=Math.round((baseAnnual/365)*100)/100;
+
+  // Build unique customers keyed by DL number
+  const custMap=new Map(); // dl -> customer object
+  const custByName=new Map(); // name -> customer (fallback for rows without DL)
+  let custSeq=1;
+  for(const row of rows){
+    const name=(row["Customer Name"]||"").trim();
+    if(!name)continue;
+    const dl=(row["Customer DL"]||"").trim();
+    const tlc=(row["Customer TLC"]||"").trim();
+    const key=dl||name; // prefer DL as unique key
+    if(!custMap.has(key)){
+      const id="C"+pad(custSeq++,4);
+      custMap.set(key,{
+        id, name, dl_number:dl, tlc_number:tlc,
+        insurance_annual_rate:baseAnnual, insurance_daily_rate:baseDailyRate, rate_tier:rateTier(baseAnnual),
+        has_active_deal:false, deal_number:null, vin:null, is_lead:true,
+        lead_stage:"Lead", created_at:dateISO(today0())
+      });
+    }
   }
-
-  const customers=[];
-  for(let i=0;i<customersCount;i++){
-    const annual=fmtRateAnnual(randInt(rng,6000,10000));
-    customers.push({
-      id:"C"+pad(i+1,4), name: genName(rng), dl_number: genDL(rng), tlc_number: genTLC(rng),
-      insurance_annual_rate: annual, insurance_daily_rate: Math.round((annual/365)*100)/100, rate_tier: rateTier(annual),
-      has_active_deal:false, deal_number:null, vin:null, is_lead:true,
-      lead_stage: pick(rng,["New","Underwriting","Approved","Docs pending","Ready to match"]),
-      created_at: dateISO(addDays(today0(), -randInt(rng,0,90)))
-    });
-  }
-
-  const vIdx=[...Array(vehiclesCount).keys()];
-  for(let i=vIdx.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[vIdx[i],vIdx[j]]=[vIdx[j],vIdx[i]];}
-  const activeVehiclePool=vIdx.slice(0,activeDeals);
-
-  const cIdx=[...Array(customersCount).keys()];
-  for(let i=cIdx.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[cIdx[i],cIdx[j]]=[cIdx[j],cIdx[i]];}
-  const activeCustomerPool=cIdx.slice(0,activeDeals);
-
-  let dealSeq=100000;
-  for(let k=0;k<activeDeals;k++){
-    const c=customers[activeCustomerPool[k]];
-    const v=vehicles[activeVehiclePool[k]];
-    const dealNum="DL-"+(dealSeq++);
-    c.has_active_deal=true; c.deal_number=dealNum; c.vin=v.vin; c.is_lead=false; c.lead_stage=null;
-    v.has_active_deal=true; v.deal_number=dealNum;
-    const start=addDays(today0(), -randInt(rng,0,240));
-    const dur=randInt(rng,30,365);
-    let end=addDays(start,dur);
-    if(rng()<0.12){ end = addDays(today0(), randInt(rng,0,30)); }
-    v.deal_start_date=dateISO(addDays(end, -randInt(rng,30,365)));
-    v.deal_end_date=dateISO(end);
-    v.sales_channel=pick(rng,CHANNELS);
-    v.current_driver_customer_id=c.id;
-    v.different_drivers_ytd=Math.max(1,randInt(rng,1,5));
-    v.drivers_switched_ytd=Math.max(0,v.different_drivers_ytd-1);
-    v.insurance_annual_rate=c.insurance_annual_rate;
-    v.insurance_daily_rate=Math.round((v.insurance_annual_rate/365)*100)/100;
-    v.insurance_rate_source="driver";
-  }
-
-  const noActive=vehicles.filter(v=>!v.has_active_deal);
-  for(let i=noActive.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[noActive[i],noActive[j]]=[noActive[j],noActive[i]];}
-  const endedPool=noActive.slice(0, Math.min(endedDealsVehicles, noActive.length));
-  for(const v of endedPool){
-    const c=customers[randInt(rng,0,customers.length-1)];
-    v.last_driver_customer_id=c.id; v.last_driver_annual_rate=c.insurance_annual_rate;
-    const end=addDays(today0(), -randInt(rng,1,240));
-    const dur=randInt(rng,30,365);
-    v.deal_number=v.deal_number || ("DL-"+(dealSeq++));
-    v.deal_end_date=dateISO(end); v.deal_start_date=dateISO(addDays(end,-dur));
-    v.sales_channel=pick(rng,CHANNELS);
-    v.different_drivers_ytd=Math.max(1,randInt(rng,1,5));
-    v.drivers_switched_ytd=Math.max(0,v.different_drivers_ytd-1);
-    v.insurance_annual_rate=c.insurance_annual_rate;
-    v.insurance_daily_rate=Math.round((v.insurance_annual_rate/365)*100)/100;
-    v.insurance_rate_source="last_driver";
-  }
-
-  const noDeal=vehicles.filter(v=>!v.has_active_deal);
-  for(let i=noDeal.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[noDeal[i],noDeal[j]]=[noDeal[j],noDeal[i]];}
-  const trulyNoDriver=noDeal.slice(0, Math.min(vehiclesWithoutDriver, noDeal.length));
-  for(const v of trulyNoDriver){
-    v.last_driver_customer_id=null; v.last_driver_annual_rate=null;
-    v.deal_number=null; v.deal_start_date=null; v.deal_end_date=null; v.sales_channel=null;
-    v.insurance_annual_rate=baseRateAnnual; v.insurance_daily_rate=Math.round((baseRateAnnual/365)*100)/100; v.insurance_rate_source="base";
-    v.different_drivers_ytd=0; v.drivers_switched_ytd=0;
-  }
-
+  const customers=[...custMap.values()];
   const customersById=Object.fromEntries(customers.map(c=>[c.id,c]));
+  // Reverse lookup: dl/name key -> customer id
+  const custKeyToId=new Map();
+  for(const[key,c]of custMap)custKeyToId.set(key,c.id);
+
+  // Build vehicles
+  const vehicles=[];
+  let vSeq=1;
+  for(const row of rows){
+    const vin=(row["VIN"]||"").trim();
+    const shortVin=(row["Short VIN"]||"").trim();
+    const vehicleVin=vin||("NOVIN-"+shortVin);
+    if(!vehicleVin||vehicleVin==="NOVIN-")continue;
+
+    const brand=(row["Brand"]||"").trim();
+    const model=(row["Model"]||"").trim();
+    const year=(row["Model Year"]||"").trim();
+    const typeModel=`${brand} ${model} ${year}`.trim();
+
+    const plate=(row["Plate Number"]||"").trim();
+    const plateStatus=(row["Plate Status"]||"").trim();
+    const diamond=(row["Diamond Number"]||"").trim();
+    const diamondExp=parseDDMMYYYY(row["Diamond Expiration"])||dateISO(addDays(today0(),180));
+
+    const dealStatus=(row["Deal Status"]||"").trim().toUpperCase();
+    const dealStatusStock=(row["Deal Status (Stock)"]||"").trim().toUpperCase();
+    const currentLease=(row["Current Lease"]||"").trim();
+    const startDate=parseDDMMYYYY(row["Start Deal Date"]);
+    const endDate=parseDDMMYYYY(row["End Deal Date"]);
+    const channel=(row["Sales Channel"]||"").trim();
+    const location=(row["Physical Location"]||"").trim()||"Unknown";
+    const color=(row["Exterior Color"]||"").trim();
+    const plateExp=parseDDMMYYYY(row["Plate Number Expiration Date"]);
+
+    const custName=(row["Customer Name"]||"").trim();
+    const custDL=(row["Customer DL"]||"").trim();
+    const custKey=custDL||custName;
+    const custId=custKey?custKeyToId.get(custKey)||null:null;
+
+    const isActive=(dealStatus==="ACTIVE"&&dealStatusStock==="ACTIVE");
+    const isSold=(dealStatus==="SOLD");
+    const isSurrendered=(dealStatus==="SURRENDERED");
+    const isStock=(dealStatus==="STOCK"||!custName);
+
+    let rateSource="base", annual=baseAnnual, daily=baseDailyRate;
+    let currentDriverId=null, lastDriverId=null, lastDriverAnnual=null;
+    let hasDeal=false, dealNumber=currentLease||null;
+
+    if(isActive&&custId){
+      hasDeal=true;
+      currentDriverId=custId;
+      rateSource="driver";
+      // Mark customer as having active deal
+      const cust=customersById[custId];
+      if(cust){
+        cust.has_active_deal=true;
+        cust.deal_number=dealNumber;
+        cust.vin=vehicleVin;
+        cust.is_lead=false;
+        cust.lead_stage=null;
+      }
+    } else if((isSold||isSurrendered)&&custId){
+      lastDriverId=custId;
+      lastDriverAnnual=baseAnnual;
+      rateSource="last_driver";
+    }
+
+    const vid="V"+pad(vSeq++,4);
+    vehicles.push({
+      id:vid, type_make_model:typeModel,
+      vin:vehicleVin, plate, diamond, diamond_expiration_date:diamondExp,
+      has_active_deal:hasDeal, deal_number:dealNumber,
+      deal_start_date:startDate, deal_end_date:endDate, sales_channel:channel||null,
+      vehicle_location:location, different_drivers_ytd:0, drivers_switched_ytd:0,
+      insurance_annual_rate:annual, insurance_daily_rate:daily,
+      insurance_rate_source:rateSource,
+      current_driver_customer_id:currentDriverId, last_driver_customer_id:lastDriverId,
+      last_driver_annual_rate:lastDriverAnnual,
+      rate_history_120d:[], status_changed_at:startDate||dateISO(today0()),
+      daily_map_120d:null, dl_changes_120d:0,
+      color, plate_status:plateStatus, plate_expiration:plateExp, deal_status_raw:dealStatus
+    });
+  }
+
   const vehiclesByVIN=Object.fromEntries(vehicles.map(v=>[v.vin,v]));
 
+  // Build flat rate history and driver timeline for each vehicle
   for(const v of vehicles){
-    v.rate_history_120d = buildRateHistory(rng, v.insurance_rate_source, baseRateAnnual, v.insurance_annual_rate, v.drivers_switched_ytd);
-    const {mapByDate, dlChangesCount} = buildDriverTimeline(rng, v, baseRateAnnual, customersById);
-    v.daily_map_120d = mapByDate;
-    v.dl_changes_120d = dlChangesCount;
+    v.rate_history_120d=buildFlatRateHistory(v.insurance_annual_rate,v.insurance_daily_rate,v.insurance_rate_source);
+    const{mapByDate,dlChangesCount}=buildFlatDriverTimeline(v,customersById);
+    v.daily_map_120d=mapByDate;
+    v.dl_changes_120d=dlChangesCount;
   }
 
-  return { meta:{seed, generated_at:new Date().toISOString(), customers_count:customers.length, vehicles_count:vehicles.length, base_rate_annual:baseRateAnnual}, customers, vehicles, index:{customersById, vehiclesByVIN}};
+  return{
+    meta:{source:"data.csv",generated_at:new Date().toISOString(),customers_count:customers.length,vehicles_count:vehicles.length,base_rate_annual:baseAnnual},
+    customers,vehicles,index:{customersById,vehiclesByVIN}
+  };
 }
 
 // ---------- UI State ----------
@@ -816,10 +791,12 @@ function renderDetail(){
     pane.innerHTML = `<div class="card">
       <h2>${escapeHTML(c.name)}</h2><div class="muted">Customer <span class="mono">${c.id}</span> • Tier ${tierPill(c.rate_tier)}</div>
       <div class="kv">
-        <div class="k">DL #</div><div class="v mono">${c.dl_number}</div>
+        <div class="k">DL #</div><div class="v mono">${c.dl_number||"—"}</div>
+        <div class="k">TLC #</div><div class="v mono">${c.tlc_number||"—"}</div>
         <div class="k">UW daily rate</div><div class="v">${money2(c.insurance_daily_rate)} / day</div>
         <div class="k">Pipeline stage</div><div class="v">${c.has_active_deal ? "—" : escapeHTML(c.lead_stage||"Lead")}</div>
         <div class="k">Active deal</div><div class="v">${dealPill(c.has_active_deal)}</div>
+        <div class="k">Deal #</div><div class="v mono">${c.deal_number || "—"}</div>
         <div class="k">VIN</div><div class="v mono">${c.vin || "—"}</div>
       </div>
       ${vehicle ? `<div class="divider"></div><div class="small">Linked vehicle</div><div style="margin-top:8px"><span class="linkish" id="jumpVehicle">${escapeHTML(vehicle.type_make_model)}</span><div class="muted mono" style="margin-top:4px">${vehicle.vin}</div></div>` : `<div class="divider"></div><div class="small">No linked vehicle. Match this lead to a vacant or expiring vehicle to realize savings.</div>`}
@@ -842,9 +819,14 @@ function renderDetail(){
       <h2>${escapeHTML(v.type_make_model)}</h2><div class="muted">VIN <span class="mono">${v.vin}</span> • Tier ${tierPill(rateTier(v.insurance_annual_rate))}</div>
       <div class="kv">
         <div class="k">Insurance daily</div><div class="v">${money2(v.insurance_daily_rate)} / day ${ratePill(v.insurance_rate_source)}</div>
-        <div class="k">Deal status</div><div class="v">${dealStatus}</div>
+        <div class="k">Deal status</div><div class="v">${dealStatus}${v.deal_status_raw&&v.deal_status_raw!==dealStatus?" <span class='small'>("+escapeHTML(v.deal_status_raw)+")</span>":""}</div>
+        <div class="k">Deal #</div><div class="v mono">${v.deal_number||"—"}</div>
+        <div class="k">Deal dates</div><div class="v mono">${v.deal_start_date||"—"} → ${v.deal_end_date||"—"}</div>
+        <div class="k">Channel</div><div class="v">${escapeHTML(v.sales_channel||"—")}</div>
         <div class="k">Location</div><div class="v">${escapeHTML(v.vehicle_location)}</div>
-        <div class="k">DL changes (120d)</div><div class="v">${v.dl_changes_120d || 0}</div>
+        <div class="k">Color</div><div class="v">${escapeHTML(v.color||"—")}</div>
+        <div class="k">Plate</div><div class="v mono">${escapeHTML(v.plate||"—")}${v.plate_status?" <span class='small'>("+escapeHTML(v.plate_status)+")</span>":""}</div>
+        <div class="k">Diamond</div><div class="v mono">${escapeHTML(v.diamond||"—")} ${v.diamond_expiration_date?diamondPill(v.diamond_expiration_date):""}</div>
       </div>
       <div class="divider"></div>
       ${current ? `<div class="small">Current driver</div><div style="margin-top:8px"><span class="linkish" id="jumpCustomer">${escapeHTML(current.name)}</span><div class="muted mono" style="margin-top:4px">${current.id} • ${tierPill(current.rate_tier)}</div></div>` : last ? `<div class="small">Last driver</div><div style="margin-top:8px"><span class="linkish" id="jumpCustomer">${escapeHTML(last.name)}</span><div class="muted mono" style="margin-top:4px">${last.id} • ${tierPill(last.rate_tier)}</div></div>` : `<div class="small"><b>Vacant</b> (no driver history) — paying base rate daily.</div>`}
@@ -899,12 +881,18 @@ function renderDetail(){
 // ---------- Initialization ----------
 function setActiveTab(){ el("tabCustomers").classList.toggle("active", view==="customers"); el("tabVehicles").classList.toggle("active", view==="vehicles"); el("tabOpp").classList.toggle("active", view==="opportunities"); el("tabDaily").classList.toggle("active", view==="daily"); }
 function populateLocationFilter(){ const s=el("filterLocation"), uniq=Array.from(new Set(DB.vehicles.map(v=>v.vehicle_location))).sort(); s.innerHTML = `<option value="all">Location: All</option>` + uniq.map(v=>`<option value="${v}">${v}</option>`).join(""); }
-function exportJSON(){ const payload={meta:DB.meta, customers:DB.customers, vehicles:DB.vehicles}, blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}), a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`fleet_poc_mockdb_seed_${DB.meta.seed}.json`; a.click(); URL.revokeObjectURL(a.href); toast("Exported JSON (customers + vehicles)."); }
-function regenerate(){ const seed=Math.floor(Math.random()*1e9); DB=generateMockDB(seed); OPPS=buildOpportunities(); page=1; selectedKey=null; tierFilter="all"; oppSection="all"; dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange); toast("Regenerated mock dataset."); refreshAll(); }
+function exportJSON(){ const payload={meta:DB.meta, customers:DB.customers, vehicles:DB.vehicles}, blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}), a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`fleet_dashboard_export.json`; a.click(); URL.revokeObjectURL(a.href); toast("Exported JSON (customers + vehicles)."); }
+async function regenerate(){ try{ DB=await loadProductionDB(); OPPS=buildOpportunities(); page=1; selectedKey=null; tierFilter="all"; oppSection="all"; dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange); toast("Reloaded production data."); refreshAll(); }catch(e){ toast("Error: "+e.message); } }
 function refreshAll(){ renderKPIs(); renderAlerts(); renderTierStrip(); populateLocationFilter(); renderTable(); renderDetail(); }
 
-function init(){
-  const seed=Math.floor(Date.now()%1e9); DB=generateMockDB(seed); OPPS=buildOpportunities(); dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange);
+async function init(){
+  try{
+    DB=await loadProductionDB();
+  }catch(e){
+    document.body.innerHTML=`<div style="padding:40px;color:#f88;font-size:18px;">Failed to load data: ${e.message}<br><br>Make sure <code>data.csv</code> is in the same directory as this HTML file.</div>`;
+    return;
+  }
+  OPPS=buildOpportunities(); dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange);
   el("tabCustomers").addEventListener("click", ()=>{view="customers"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
   el("tabVehicles").addEventListener("click", ()=>{view="vehicles"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
   el("tabOpp").addEventListener("click", ()=>{view="opportunities"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
