@@ -4,6 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Fleet / Customers / Insurance POC (V4 - Final)</title>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
   <style>
     :root{
       --bg:#0b1020; --text:#e7ecff; --muted:#aeb9e6; --line:rgba(231,236,255,.12);
@@ -28,6 +31,7 @@
     .btn{border:1px solid var(--line); background: linear-gradient(180deg, rgba(18,26,51,.9), rgba(15,23,48,.9)); color:var(--text); padding:10px 12px; border-radius:12px; cursor:pointer; box-shadow: var(--shadow); transition: transform .08s ease, border-color .2s ease; font-size:13px;}
     .btn:hover{transform: translateY(-1px); border-color: rgba(231,236,255,.22)}
     .btn.secondary{box-shadow:none; background:rgba(18,26,51,.5);}
+    .btn:disabled{opacity: 0.5; cursor: not-allowed; border-color: var(--line);}
     .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
     .kpis{display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin: 10px 0 12px;}
     @media (max-width: 1180px){ .kpis{grid-template-columns: 1fr 1fr} }
@@ -170,14 +174,23 @@
           V4 features the Daily Spend matrix with sticky columns, and full Match Simulator capabilities in the details pane.
         </div>
         <div class="chiprow">
-          <div class="chip">Mock DB: generated in-browser</div>
           <div class="chip">Daily matrix: rate + DL per VIN per day</div>
           <div class="chip">Match Simulator enabled</div>
         </div>
       </div>
+      
       <div class="row">
-        <button class="btn secondary" id="btnRegenerate">Regenerate mock data</button>
-        <button class="btn" id="btnExport">Export JSON</button>
+        <input type="file" id="uploadCustomers" accept=".csv" style="display: none;" />
+        <input type="file" id="uploadVehicles" accept=".csv" style="display: none;" />
+        
+        <button class="btn secondary" id="btnCustFile" onclick="document.getElementById('uploadCustomers').click()">1. Load Customers CSV</button>
+        <button class="btn secondary" id="btnVehFile" onclick="document.getElementById('uploadVehicles').click()">2. Load Vehicles CSV</button>
+        <button class="btn" id="btnRunDashboard" disabled style="background: var(--good); color: #0b1020; font-weight: bold;">Run Real Data</button>
+        
+        <div style="width: 1px; height: 30px; background: var(--line); margin: 0 10px;"></div>
+        
+        <button class="btn secondary" id="btnRegenerate">Load Mock Data</button>
+        <button class="btn secondary" id="btnExport">Export JSON</button>
       </div>
     </header>
 
@@ -526,6 +539,96 @@ function toast(msg){
   clearTimeout(lastToastTimeout);
   lastToastTimeout=setTimeout(()=>{t.style.display="none";},2400);
 }
+
+// ==========================================
+// CSV INGESTION LOGIC (NEW)
+// ==========================================
+let uploadedData = { customers: null, vehicles: null };
+
+function handleCSVUpload(event, type) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  Papa.parse(file, {
+    header: true,
+    dynamicTyping: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      if (type === 'customers') {
+        uploadedData.customers = results.data;
+        el("btnCustFile").textContent = "✅ Customers Loaded";
+      } else {
+        uploadedData.vehicles = results.data;
+        el("btnVehFile").textContent = "✅ Vehicles Loaded";
+      }
+      checkReadyToRun();
+    }
+  });
+}
+
+function checkReadyToRun() {
+  if (uploadedData.customers && uploadedData.vehicles) {
+    el("btnRunDashboard").disabled = false;
+  }
+}
+
+function ingestRealData() {
+  const baseRateAnnual = 8200; // Fallback rate
+
+  // 1. Clean & Normalize Customers
+  uploadedData.customers.forEach(c => {
+    // Ensure numbers are calculated
+    c.insurance_annual_rate = Number(c.insurance_annual_rate) || baseRateAnnual;
+    c.insurance_daily_rate = Math.round((c.insurance_annual_rate / 365) * 100) / 100;
+    c.rate_tier = rateTier(c.insurance_annual_rate);
+    
+    // Safely parse booleans from strings (e.g., "Yes" or "true")
+    if (typeof c.has_active_deal === 'string') {
+      c.has_active_deal = (c.has_active_deal.toLowerCase() === 'yes' || c.has_active_deal.toLowerCase() === 'true');
+    }
+  });
+
+  const customersById = Object.fromEntries(uploadedData.customers.map(c => [c.id, c]));
+
+  // 2. Clean & Normalize Vehicles
+  uploadedData.vehicles.forEach(v => {
+    v.insurance_annual_rate = Number(v.insurance_annual_rate) || baseRateAnnual;
+    v.insurance_daily_rate = Math.round((v.insurance_annual_rate / 365) * 100) / 100;
+    
+    if (typeof v.has_active_deal === 'string') {
+      v.has_active_deal = (v.has_active_deal.toLowerCase() === 'yes' || v.has_active_deal.toLowerCase() === 'true');
+    }
+
+    // 3. Generate a fallback 120-day history so the Dashboard charts don't crash
+    const rng = Math.random; // Use simple random function for the fallback
+    if(!v.rate_history_120d) {
+      v.rate_history_120d = buildRateHistory(rng, v.insurance_rate_source || "base", baseRateAnnual, v.insurance_annual_rate, v.drivers_switched_ytd || 0);
+      const {mapByDate, dlChangesCount} = buildDriverTimeline(rng, v, baseRateAnnual, customersById);
+      v.daily_map_120d = mapByDate;
+      v.dl_changes_120d = dlChangesCount;
+    }
+  });
+
+  const vehiclesByVIN = Object.fromEntries(uploadedData.vehicles.map(v => [v.vin, v]));
+
+  // Overwrite DB State
+  DB = {
+    meta: { seed: "REAL_CSV_DATA", generated_at: new Date().toISOString(), customers_count: uploadedData.customers.length, vehicles_count: uploadedData.vehicles.length, base_rate_annual: baseRateAnnual },
+    customers: uploadedData.customers,
+    vehicles: uploadedData.vehicles,
+    index: { customersById, vehiclesByVIN }
+  };
+
+  OPPS = buildOpportunities();
+  refreshAll();
+  toast("✅ Real Data Loaded and Dashboard Updated!");
+}
+
+// Hook up event listeners for file inputs
+document.getElementById('uploadCustomers').addEventListener('change', (e) => handleCSVUpload(e, 'customers'));
+document.getElementById('uploadVehicles').addEventListener('change', (e) => handleCSVUpload(e, 'vehicles'));
+document.getElementById('btnRunDashboard').addEventListener('click', ingestRealData);
+
 
 // ---------- KPIs & Alerts ----------
 function computeSpend(){
@@ -890,7 +993,7 @@ function renderDetail(){
     const c=document.getElementById("rateChart");
     if(c && v.rate_history_120d) {
       // just take last 60 days for mini chart to fit the pane better
-      const slice = v.rate_history_120d.slice(-60).map(x=>({y: x.daily, dlChanged: x.switched}));
+      const slice = v.rate_history_120d.slice(-60).map(x=>({y: x.daily, dlChanged: x.swcripts}));
       drawLineChart(c, slice);
     }
   }
