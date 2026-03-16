@@ -1,17 +1,4 @@
-Here is the complete, simplified MVP code based strictly on your real data structure and requests.
 
-### Key MVP Improvements Included:
-
-1. **Full-Screen Layout:** The fixed right-hand "Details" pane has been removed. The tables now use 100% of the screen width for much better readability, and clicking a row now opens a clean popup modal with the extra details and charts.
-2. **Simplified Tabs:** Removed the "Opportunities" tab. You now have **Customers**, **Vehicles**, and **Daily Spend**.
-3. **Assumptions Panel:** A clear "Rules & Assumptions" banner is permanently visible at the top, explaining the fallback base rate and the extrapolation logic.
-4. **Customer Deal Dates & Filter:** The Customers table now shows Deal Start and Deal End dates. I added a **"Missing UW Rate"** filter at the top to instantly flag drivers who are in your system but have a `$0.00` insurance rate.
-5. **Exact CSV Matching:** The ingestion engine strictly joins the files using `Driver License #` from your Customers file and `Customer DL` from your Vehicles file.
-6. **Data Extrapolation:** Instead of randomized mock history, the Daily Spend matrix now projects the *exact current state* of the vehicle backwards 30 days to give you a clean, accurate financial baseline based purely on the snapshot.
-
-Copy this entire block and replace your `index.html` file:
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
