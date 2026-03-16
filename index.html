@@ -157,6 +157,31 @@
     .modalHeader .s{font-size: 12px; color: var(--muted); margin-top:4px}
     .modalBody{padding: 12px 14px;}
     .modalBody canvas{height: 220px}
+
+    /* Upload Modal */
+    .uploadBackdrop{
+      position: fixed; inset:0; background: rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; padding: 18px; z-index: 60;
+    }
+    .uploadModal{
+      width: min(640px, 96vw); border: 1px solid rgba(231,236,255,.16); background: rgba(18,26,51,.97); border-radius: 18px; box-shadow: var(--shadow);
+    }
+    .uploadHeader{
+      display:flex; align-items:center; justify-content:space-between; padding: 14px 16px; border-bottom: 1px solid rgba(231,236,255,.12);
+    }
+    .uploadHeader h2{margin:0; font-size:16px}
+    .uploadBody{padding: 16px; display:flex; flex-direction:column; gap:16px}
+    .dropZone{
+      border: 2px dashed rgba(231,236,255,.2); border-radius: 14px; padding: 28px 16px; text-align:center;
+      color: var(--muted); font-size: 13px; cursor:pointer; transition: border-color .2s, background .2s;
+    }
+    .dropZone:hover, .dropZone.dragover{border-color: rgba(106,228,255,.5); background: rgba(106,228,255,.06)}
+    .dropZone.loaded{border-color: rgba(62,240,168,.4); background: rgba(62,240,168,.06)}
+    .dropZone .label{font-size:14px; font-weight:600; color:var(--text); margin-bottom:6px}
+    .dropZone .status{margin-top:8px; font-size:12px}
+    .dropZone .status.ok{color: var(--good)}
+    .dropZone .status.err{color: var(--bad)}
+    .uploadActions{display:flex; gap:10px; justify-content:flex-end; padding: 0 16px 16px}
+    .dataChip{display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:11px; border:1px solid rgba(62,240,168,.3); color:var(--good); background:rgba(62,240,168,.08)}
   </style>
 </head>
 <body>
@@ -176,10 +201,41 @@
         </div>
       </div>
       <div class="row">
-        <button class="btn secondary" id="btnRegenerate">Reload data</button>
-        <button class="btn" id="btnExport">Export JSON</button>
+        <button class="btn" id="btnUpload">Upload CSVs</button>
+        <button class="btn secondary" id="btnExport">Export JSON</button>
+        <span id="dataSourceChip"></span>
       </div>
     </header>
+
+    <!-- Upload Modal -->
+    <div class="uploadBackdrop" id="uploadBackdrop">
+      <div class="uploadModal">
+        <div class="uploadHeader">
+          <h2>Upload Data</h2>
+          <button class="btn secondary miniBtn" id="uploadClose">Close</button>
+        </div>
+        <div class="uploadBody">
+          <div class="dropZone" id="dropCustomers">
+            <div class="label">Customers CSV</div>
+            Drop file here or click to browse<br>
+            <span class="small">Columns: Name, Driver License #, Deal Date, Deal end date, Annual insurance rate, Daily insurance rate</span>
+            <div class="status" id="statusCustomers"></div>
+            <input type="file" accept=".csv,.tsv,.txt" style="display:none" id="fileCustomers">
+          </div>
+          <div class="dropZone" id="dropVehicles">
+            <div class="label">Vehicles CSV</div>
+            Drop file here or click to browse<br>
+            <span class="small">Columns: Customer DL, Deal Status, VIN, Brand, Model, Model Year, Plate Number, Diamond Number, etc.</span>
+            <div class="status" id="statusVehicles"></div>
+            <input type="file" accept=".csv,.tsv,.txt" style="display:none" id="fileVehicles">
+          </div>
+        </div>
+        <div class="uploadActions">
+          <button class="btn secondary miniBtn" id="btnClearData">Clear stored data</button>
+          <button class="btn" id="btnLoadCSVs" disabled>Load into dashboard</button>
+        </div>
+      </div>
+    </div>
 
     <section class="kpis" id="kpis"></section>
     <section class="alerts" id="alerts"></section>
@@ -302,7 +358,21 @@ function dealEndsSoon(endISO){ if(!endISO) return false; const end=new Date(endI
 
 // ---------- CSV Parsing & Production Data Loading ----------
 const BASE_RATE_ANNUAL=8200;
+const STORAGE_KEY_CUST="fleet_csv_customers";
+const STORAGE_KEY_VEH="fleet_csv_vehicles";
+
+// Detect delimiter: tab or comma
+function detectDelimiter(text){
+  const firstLine=text.split(/\r?\n/)[0]||"";
+  const tabs=firstLine.split("\t").length;
+  const commas=firstLine.split(",").length;
+  return tabs>commas?"\t":",";
+}
+
 function parseCSV(text){
+  const delim=detectDelimiter(text);
+  if(delim==="\t") return parseTSV(text);
+  // Comma CSV with quoted-field support
   const lines=[], rows=[];
   let cur="", inQ=false;
   const cells=[];
@@ -321,6 +391,19 @@ function parseCSV(text){
   }
   return rows;
 }
+function parseTSV(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)return[];
+  const hdr=lines[0].split("\t").map(h=>h.trim());
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const vals=lines[i].split("\t");
+    const obj={};
+    for(let c=0;c<hdr.length;c++) obj[hdr[c]]=(vals[c]||"").trim();
+    rows.push(obj);
+  }
+  return rows;
+}
 function parseDDMMYYYY(s){
   if(!s)return null;
   const parts=s.split("/");
@@ -330,12 +413,17 @@ function parseDDMMYYYY(s){
   const dt=new Date(y,m-1,d);dt.setHours(0,0,0,0);
   return dateISO(dt);
 }
-function buildFlatRateHistory(annual, daily, source, dl, driverId){
+function parseRate(s){
+  if(!s)return null;
+  const cleaned=s.replace(/[,$\s]/g,"");
+  const n=parseFloat(cleaned);
+  return isNaN(n)?null:n;
+}
+function buildFlatRateHistory(annual, daily){
   const days=120, out=[];
   const end=today0(), start=addDays(end,-(days-1));
   for(let i=0;i<days;i++){
-    const d=addDays(start,i);
-    out.push({date:dateISO(d), annual, daily, switched:false});
+    out.push({date:dateISO(addDays(start,i)), annual, daily, switched:false});
   }
   return out;
 }
@@ -353,80 +441,127 @@ function buildFlatDriverTimeline(vehicle, customersById){
   return{mapByDate:map,dlChangesCount:0};
 }
 
-async function loadProductionDB(){
-  const resp=await fetch("data.csv");
-  if(!resp.ok)throw new Error("Failed to load data.csv: "+resp.status);
-  const text=await resp.text();
-  const rows=parseCSV(text);
-  if(rows.length===0)throw new Error("CSV is empty or malformed");
+// Normalize column names to handle variations
+function normCol(rows, candidates){
+  if(!rows.length)return null;
+  const keys=Object.keys(rows[0]);
+  for(const c of candidates){
+    const cl=c.toLowerCase();
+    const match=keys.find(k=>k.toLowerCase()===cl);
+    if(match)return match;
+  }
+  return null;
+}
+function getCol(row, colName){ return colName?(row[colName]||"").trim():""; }
 
+function buildDB(custRows, vehRows){
   const baseAnnual=BASE_RATE_ANNUAL;
   const baseDailyRate=Math.round((baseAnnual/365)*100)/100;
 
-  // Build unique customers keyed by DL number
-  const custMap=new Map(); // dl -> customer object
-  const custByName=new Map(); // name -> customer (fallback for rows without DL)
-  let custSeq=1;
-  for(const row of rows){
-    const name=(row["Customer Name"]||"").trim();
-    if(!name)continue;
-    const dl=(row["Customer DL"]||"").trim();
-    const tlc=(row["Customer TLC"]||"").trim();
-    const key=dl||name; // prefer DL as unique key
-    if(!custMap.has(key)){
-      const id="C"+pad(custSeq++,4);
-      custMap.set(key,{
-        id, name, dl_number:dl, tlc_number:tlc,
-        insurance_annual_rate:baseAnnual, insurance_daily_rate:baseDailyRate, rate_tier:rateTier(baseAnnual),
-        has_active_deal:false, deal_number:null, vin:null, is_lead:true,
-        lead_stage:"Lead", created_at:dateISO(today0())
-      });
-    }
-  }
-  const customers=[...custMap.values()];
-  const customersById=Object.fromEntries(customers.map(c=>[c.id,c]));
-  // Reverse lookup: dl/name key -> customer id
-  const custKeyToId=new Map();
-  for(const[key,c]of custMap)custKeyToId.set(key,c.id);
+  // --- Resolve customer CSV column names ---
+  const cCols={
+    name: normCol(custRows,["Name","Customer Name"]),
+    dl: normCol(custRows,["Driver License #","DL","Driver License","Customer DL"]),
+    dealDate: normCol(custRows,["Deal Date"]),
+    dealEnd: normCol(custRows,["Deal end date","Deal End Date"]),
+    annualRate: normCol(custRows,["Annual insurance rate","Annual Insurance Rate","Insurance Annual Rate"]),
+    dailyRate: normCol(custRows,["Daily insurance rate","Daily Insurance Rate","Insurance Daily Rate"]),
+  };
 
-  // Build vehicles
+  // --- Build customers from Customers CSV, keyed by DL ---
+  const custByDL=new Map(); // dl -> customer object
+  let custSeq=1;
+  for(const row of custRows){
+    const name=getCol(row,cCols.name);
+    const dl=getCol(row,cCols.dl);
+    if(!name&&!dl)continue;
+    const key=dl||name;
+    if(custByDL.has(key))continue;
+
+    const annualRaw=parseRate(getCol(row,cCols.annualRate));
+    const dailyRaw=parseRate(getCol(row,cCols.dailyRate));
+    const annual=annualRaw||baseAnnual;
+    const daily=dailyRaw||Math.round((annual/365)*100)/100;
+    const dealDate=parseDDMMYYYY(getCol(row,cCols.dealDate));
+    const dealEnd=parseDDMMYYYY(getCol(row,cCols.dealEnd));
+
+    const id="C"+pad(custSeq++,5);
+    custByDL.set(key,{
+      id, name, dl_number:dl, tlc_number:"",
+      insurance_annual_rate:annual, insurance_daily_rate:daily, rate_tier:rateTier(annual),
+      has_active_deal:false, deal_number:null, vin:null, is_lead:true,
+      lead_stage:"Lead", created_at:dealDate||dateISO(today0()),
+      cust_deal_date:dealDate, cust_deal_end:dealEnd
+    });
+  }
+
+  // --- Resolve vehicle CSV column names ---
+  const vCols={
+    dl: normCol(vehRows,["Customer DL"]),
+    tlc: normCol(vehRows,["Customer TLC"]),
+    dealStatus: normCol(vehRows,["Deal Status"]),
+    lease: normCol(vehRows,["Current Lease"]),
+    vin: normCol(vehRows,["VIN"]),
+    shortVin: normCol(vehRows,["Short VIN"]),
+    brand: normCol(vehRows,["Brand"]),
+    model: normCol(vehRows,["Model"]),
+    year: normCol(vehRows,["Model Year"]),
+    color: normCol(vehRows,["Exterior Color"]),
+    plate: normCol(vehRows,["Plate Number"]),
+    plateExp: normCol(vehRows,["Plate Number Expiration Date"]),
+    plateStatus: normCol(vehRows,["Plate Status"]),
+    diamond: normCol(vehRows,["Diamond Number"]),
+    diamondExp: normCol(vehRows,["Diamond Expiration"]),
+    startDate: normCol(vehRows,["Start Deal Date"]),
+    endDate: normCol(vehRows,["End Deal Date"]),
+    channel: normCol(vehRows,["Sales Channel"]),
+    location: normCol(vehRows,["Physical Location"]),
+  };
+
+  // Reverse lookup: dl -> customer id
+  const dlToId=new Map();
+  for(const[key,c]of custByDL) dlToId.set(key,c.id);
+  const customersById={};
+  for(const c of custByDL.values()) customersById[c.id]=c;
+
+  // --- Build vehicles from Vehicles CSV ---
   const vehicles=[];
   let vSeq=1;
-  for(const row of rows){
-    const vin=(row["VIN"]||"").trim();
-    const shortVin=(row["Short VIN"]||"").trim();
-    const vehicleVin=vin||("NOVIN-"+shortVin);
-    if(!vehicleVin||vehicleVin==="NOVIN-")continue;
+  for(const row of vehRows){
+    const vin=getCol(row,vCols.vin);
+    const shortVin=getCol(row,vCols.shortVin);
+    const vehicleVin=vin||(shortVin?("NOVIN-"+shortVin):"");
+    if(!vehicleVin)continue;
 
-    const brand=(row["Brand"]||"").trim();
-    const model=(row["Model"]||"").trim();
-    const year=(row["Model Year"]||"").trim();
+    const brand=getCol(row,vCols.brand);
+    const model=getCol(row,vCols.model);
+    const year=getCol(row,vCols.year);
     const typeModel=`${brand} ${model} ${year}`.trim();
 
-    const plate=(row["Plate Number"]||"").trim();
-    const plateStatus=(row["Plate Status"]||"").trim();
-    const diamond=(row["Diamond Number"]||"").trim();
-    const diamondExp=parseDDMMYYYY(row["Diamond Expiration"])||dateISO(addDays(today0(),180));
+    const plate=getCol(row,vCols.plate);
+    const plateStatus=getCol(row,vCols.plateStatus);
+    const diamond=getCol(row,vCols.diamond);
+    const diamondExp=parseDDMMYYYY(getCol(row,vCols.diamondExp))||dateISO(addDays(today0(),180));
 
-    const dealStatus=(row["Deal Status"]||"").trim().toUpperCase();
-    const dealStatusStock=(row["Deal Status (Stock)"]||"").trim().toUpperCase();
-    const currentLease=(row["Current Lease"]||"").trim();
-    const startDate=parseDDMMYYYY(row["Start Deal Date"]);
-    const endDate=parseDDMMYYYY(row["End Deal Date"]);
-    const channel=(row["Sales Channel"]||"").trim();
-    const location=(row["Physical Location"]||"").trim()||"Unknown";
-    const color=(row["Exterior Color"]||"").trim();
-    const plateExp=parseDDMMYYYY(row["Plate Number Expiration Date"]);
+    const dealStatus=getCol(row,vCols.dealStatus).toUpperCase();
+    const currentLease=getCol(row,vCols.lease);
+    const startDate=parseDDMMYYYY(getCol(row,vCols.startDate));
+    const endDate=parseDDMMYYYY(getCol(row,vCols.endDate));
+    const channel=getCol(row,vCols.channel);
+    const location=getCol(row,vCols.location)||"Unknown";
+    const color=getCol(row,vCols.color);
+    const plateExp=parseDDMMYYYY(getCol(row,vCols.plateExp));
 
-    const custName=(row["Customer Name"]||"").trim();
-    const custDL=(row["Customer DL"]||"").trim();
-    const custKey=custDL||custName;
-    const custId=custKey?custKeyToId.get(custKey)||null:null;
+    const custDL=getCol(row,vCols.dl);
+    const custTLC=getCol(row,vCols.tlc);
+    const custId=custDL?dlToId.get(custDL)||null:null;
 
-    const isActive=(dealStatus==="ACTIVE"&&dealStatusStock==="ACTIVE");
-    const isSold=(dealStatus==="SOLD");
-    const isSurrendered=(dealStatus==="SURRENDERED");
-    const isStock=(dealStatus==="STOCK"||!custName);
+    // Update TLC on customer if available
+    if(custId&&custTLC){const c=customersById[custId]; if(c&&!c.tlc_number)c.tlc_number=custTLC;}
+
+    const isActive=(dealStatus==="ACTIVE");
+    const isSold=(dealStatus==="SOLD"||dealStatus==="SURRENDERED");
+    const isStock=(dealStatus==="STOCK"||!custDL);
 
     let rateSource="base", annual=baseAnnual, daily=baseDailyRate;
     let currentDriverId=null, lastDriverId=null, lastDriverAnnual=null;
@@ -435,23 +570,29 @@ async function loadProductionDB(){
     if(isActive&&custId){
       hasDeal=true;
       currentDriverId=custId;
-      rateSource="driver";
-      // Mark customer as having active deal
       const cust=customersById[custId];
       if(cust){
+        annual=cust.insurance_annual_rate;
+        daily=cust.insurance_daily_rate;
+        rateSource="driver";
         cust.has_active_deal=true;
         cust.deal_number=dealNumber;
         cust.vin=vehicleVin;
         cust.is_lead=false;
         cust.lead_stage=null;
       }
-    } else if((isSold||isSurrendered)&&custId){
+    } else if(isSold&&custId){
       lastDriverId=custId;
-      lastDriverAnnual=baseAnnual;
+      const cust=customersById[custId];
+      if(cust){
+        lastDriverAnnual=cust.insurance_annual_rate;
+        annual=cust.insurance_annual_rate;
+        daily=cust.insurance_daily_rate;
+      }
       rateSource="last_driver";
     }
 
-    const vid="V"+pad(vSeq++,4);
+    const vid="V"+pad(vSeq++,5);
     vehicles.push({
       id:vid, type_make_model:typeModel,
       vin:vehicleVin, plate, diamond, diamond_expiration_date:diamondExp,
@@ -468,20 +609,137 @@ async function loadProductionDB(){
     });
   }
 
+  const customers=[...custByDL.values()];
   const vehiclesByVIN=Object.fromEntries(vehicles.map(v=>[v.vin,v]));
 
-  // Build flat rate history and driver timeline for each vehicle
+  // Build rate history and driver timeline
   for(const v of vehicles){
-    v.rate_history_120d=buildFlatRateHistory(v.insurance_annual_rate,v.insurance_daily_rate,v.insurance_rate_source);
+    v.rate_history_120d=buildFlatRateHistory(v.insurance_annual_rate,v.insurance_daily_rate);
     const{mapByDate,dlChangesCount}=buildFlatDriverTimeline(v,customersById);
     v.daily_map_120d=mapByDate;
     v.dl_changes_120d=dlChangesCount;
   }
 
+  const matched=vehicles.filter(v=>v.current_driver_customer_id).length;
+  const unmatched=vehicles.filter(v=>v.has_active_deal&&!v.current_driver_customer_id).length;
+
   return{
-    meta:{source:"data.csv",generated_at:new Date().toISOString(),customers_count:customers.length,vehicles_count:vehicles.length,base_rate_annual:baseAnnual},
+    meta:{source:"csv_upload",generated_at:new Date().toISOString(),customers_count:customers.length,vehicles_count:vehicles.length,base_rate_annual:baseAnnual,matched_vehicles:matched,unmatched_active:unmatched},
     customers,vehicles,index:{customersById,vehiclesByVIN}
   };
+}
+
+// --- Storage helpers ---
+function saveCSVsToStorage(custText,vehText){
+  try{ localStorage.setItem(STORAGE_KEY_CUST,custText); localStorage.setItem(STORAGE_KEY_VEH,vehText); }catch(e){ console.warn("localStorage save failed:",e); }
+}
+function loadCSVsFromStorage(){
+  const c=localStorage.getItem(STORAGE_KEY_CUST), v=localStorage.getItem(STORAGE_KEY_VEH);
+  if(c&&v)return{custText:c,vehText:v};
+  return null;
+}
+function clearCSVsFromStorage(){
+  localStorage.removeItem(STORAGE_KEY_CUST); localStorage.removeItem(STORAGE_KEY_VEH);
+}
+
+// --- Upload UI wiring ---
+let pendingCustText=null, pendingVehText=null;
+
+function setupUploadUI(){
+  const backdrop=el("uploadBackdrop");
+  const dropC=el("dropCustomers"), dropV=el("dropVehicles");
+  const fileC=el("fileCustomers"), fileV=el("fileVehicles");
+  const statusC=el("statusCustomers"), statusV=el("statusVehicles");
+  const btnLoad=el("btnLoadCSVs");
+
+  function openUpload(){ backdrop.style.display="flex"; }
+  function closeUpload(){ backdrop.style.display="none"; }
+
+  el("btnUpload").addEventListener("click", openUpload);
+  el("uploadClose").addEventListener("click", closeUpload);
+  backdrop.addEventListener("click", e=>{ if(e.target===backdrop)closeUpload(); });
+
+  function updateLoadBtn(){
+    btnLoad.disabled=!(pendingCustText&&pendingVehText);
+  }
+
+  function handleFile(text, type){
+    const rows=parseCSV(text);
+    if(type==="customers"){
+      pendingCustText=text;
+      const hasName=rows.length>0&&normCol(rows,["Name","Customer Name"]);
+      const hasDL=rows.length>0&&normCol(rows,["Driver License #","DL","Driver License","Customer DL"]);
+      if(rows.length>0&&hasName&&hasDL){
+        statusC.className="status ok";
+        statusC.textContent=`${rows.length} customers parsed`;
+        dropC.classList.add("loaded");
+      } else {
+        statusC.className="status err";
+        statusC.textContent=rows.length===0?"No rows found":"Missing Name or DL column";
+        pendingCustText=null;
+      }
+    } else {
+      pendingVehText=text;
+      const hasVIN=rows.length>0&&normCol(rows,["VIN"]);
+      if(rows.length>0&&hasVIN){
+        statusV.className="status ok";
+        statusV.textContent=`${rows.length} vehicles parsed`;
+        dropV.classList.add("loaded");
+      } else {
+        statusV.className="status err";
+        statusV.textContent=rows.length===0?"No rows found":"Missing VIN column";
+        pendingVehText=null;
+      }
+    }
+    updateLoadBtn();
+  }
+
+  function setupDrop(zone, input, type){
+    zone.addEventListener("click", ()=>input.click());
+    input.addEventListener("change", ()=>{ if(input.files[0]){ input.files[0].text().then(t=>handleFile(t,type)); }});
+    zone.addEventListener("dragover", e=>{e.preventDefault();zone.classList.add("dragover");});
+    zone.addEventListener("dragleave", ()=>zone.classList.remove("dragover"));
+    zone.addEventListener("drop", e=>{
+      e.preventDefault(); zone.classList.remove("dragover");
+      const file=e.dataTransfer.files[0];
+      if(file) file.text().then(t=>handleFile(t,type));
+    });
+  }
+  setupDrop(dropC, fileC, "customers");
+  setupDrop(dropV, fileV, "vehicles");
+
+  btnLoad.addEventListener("click", ()=>{
+    if(!pendingCustText||!pendingVehText)return;
+    try{
+      const custRows=parseCSV(pendingCustText);
+      const vehRows=parseCSV(pendingVehText);
+      DB=buildDB(custRows,vehRows);
+      saveCSVsToStorage(pendingCustText,pendingVehText);
+      OPPS=buildOpportunities(); page=1; selectedKey=null; tierFilter="all"; oppSection="all";
+      dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange);
+      refreshAll(); updateDataChip();
+      closeUpload();
+      toast(`Loaded ${DB.meta.customers_count} customers + ${DB.meta.vehicles_count} vehicles.`);
+    }catch(e){
+      toast("Error building DB: "+e.message);
+    }
+  });
+
+  el("btnClearData").addEventListener("click", ()=>{
+    clearCSVsFromStorage();
+    pendingCustText=null; pendingVehText=null;
+    statusC.textContent=""; statusV.textContent="";
+    dropC.classList.remove("loaded"); dropV.classList.remove("loaded");
+    updateLoadBtn();
+    toast("Stored data cleared. Upload new CSVs.");
+  });
+}
+
+function updateDataChip(){
+  const chip=el("dataSourceChip");
+  if(!DB){chip.innerHTML="";return;}
+  const c=DB.meta.customers_count, v=DB.meta.vehicles_count;
+  chip.innerHTML=`<span class="dataChip">${c} customers &bull; ${v} vehicles</span>`;
 }
 
 // ---------- UI State ----------
@@ -882,29 +1140,47 @@ function renderDetail(){
 function setActiveTab(){ el("tabCustomers").classList.toggle("active", view==="customers"); el("tabVehicles").classList.toggle("active", view==="vehicles"); el("tabOpp").classList.toggle("active", view==="opportunities"); el("tabDaily").classList.toggle("active", view==="daily"); }
 function populateLocationFilter(){ const s=el("filterLocation"), uniq=Array.from(new Set(DB.vehicles.map(v=>v.vehicle_location))).sort(); s.innerHTML = `<option value="all">Location: All</option>` + uniq.map(v=>`<option value="${v}">${v}</option>`).join(""); }
 function exportJSON(){ const payload={meta:DB.meta, customers:DB.customers, vehicles:DB.vehicles}, blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}), a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`fleet_dashboard_export.json`; a.click(); URL.revokeObjectURL(a.href); toast("Exported JSON (customers + vehicles)."); }
-async function regenerate(){ try{ DB=await loadProductionDB(); OPPS=buildOpportunities(); page=1; selectedKey=null; tierFilter="all"; oppSection="all"; dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange); toast("Reloaded production data."); refreshAll(); }catch(e){ toast("Error: "+e.message); } }
-function refreshAll(){ renderKPIs(); renderAlerts(); renderTierStrip(); populateLocationFilter(); renderTable(); renderDetail(); }
+function refreshAll(){ renderKPIs(); renderAlerts(); renderTierStrip(); populateLocationFilter(); renderTable(); renderDetail(); updateDataChip(); }
 
-async function init(){
-  try{
-    DB=await loadProductionDB();
-  }catch(e){
-    document.body.innerHTML=`<div style="padding:40px;color:#f88;font-size:18px;">Failed to load data: ${e.message}<br><br>Make sure <code>data.csv</code> is in the same directory as this HTML file.</div>`;
-    return;
+function init(){
+  // Try to load from localStorage
+  const stored=loadCSVsFromStorage();
+  if(stored){
+    try{
+      const custRows=parseCSV(stored.custText);
+      const vehRows=parseCSV(stored.vehText);
+      DB=buildDB(custRows,vehRows);
+    }catch(e){
+      console.warn("Failed to load stored CSVs:",e);
+    }
   }
-  OPPS=buildOpportunities(); dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange);
+
+  if(DB){
+    OPPS=buildOpportunities(); dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange);
+  }
+
+  // Wire up tabs
   el("tabCustomers").addEventListener("click", ()=>{view="customers"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
   el("tabVehicles").addEventListener("click", ()=>{view="vehicles"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
   el("tabOpp").addEventListener("click", ()=>{view="opportunities"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
   el("tabDaily").addEventListener("click", ()=>{view="daily"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
   ["search","filterDeal","filterLocation"].forEach(id=>{ el(id).addEventListener("input", ()=>{page=1; selectedKey=null; renderTable(); renderDetail();}); el(id).addEventListener("change", ()=>{page=1; selectedKey=null; renderTable(); renderDetail();}); });
   el("prevPage").addEventListener("click", ()=>{page--; renderTable();}); el("nextPage").addEventListener("click", ()=>{page++; renderTable();});
-  el("btnExport").addEventListener("click", exportJSON); el("btnRegenerate").addEventListener("click", regenerate);
+  el("btnExport").addEventListener("click", exportJSON);
   el("rangePreset").addEventListener("change", ()=>{ const preset=el("rangePreset").value; if(preset==="custom") return; dailyRange = computeRangeFromPreset(preset); setDailyControlsFromRange(dailyRange); page=1; selectedKey=null; if(view==="daily"){ renderTable(); renderDetail(); } });
   el("btnApplyRange").addEventListener("click", ()=>{ dailyRange = computeRangeFromPreset(el("rangePreset").value); page=1; selectedKey=null; if(view==="daily"){ renderTable(); renderDetail(); toast(`Applied range ${dailyRange.start} → ${dailyRange.end}`); } });
   el("btnExportCSV").addEventListener("click", exportDailyCSV);
   el("modalClose").addEventListener("click", closePlotModal); el("modalBackdrop").addEventListener("click", (e)=>{ if(e.target===el("modalBackdrop")) closePlotModal(); }); document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") closePlotModal(); });
-  setActiveTab(); refreshAll();
+  setupUploadUI();
+  setActiveTab();
+
+  if(DB){
+    refreshAll();
+  } else {
+    // No data yet — show upload modal automatically
+    el("uploadBackdrop").style.display="flex";
+    el("kpis").innerHTML=`<div class="card" style="grid-column:1/-1;text-align:center;padding:30px"><h2>Welcome</h2><div class="muted">Upload your Customers and Vehicles CSVs to get started.</div></div>`;
+  }
 }
 init();
 </script>
