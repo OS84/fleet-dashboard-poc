@@ -29,8 +29,9 @@
     .btn:hover{transform: translateY(-1px); border-color: rgba(231,236,255,.22)}
     .btn.secondary{box-shadow:none; background:rgba(18,26,51,.5);}
     .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    .kpis{display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin: 10px 0 12px;}
-    @media (max-width: 1180px){ .kpis{grid-template-columns: 1fr 1fr} }
+    .kpis{display:grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 12px; margin: 10px 0 12px;}
+    @media (max-width: 1400px){ .kpis{grid-template-columns: repeat(3, minmax(0,1fr))} }
+    @media (max-width: 900px){ .kpis{grid-template-columns: 1fr 1fr} }
     .card{
       border:1px solid var(--line); background: linear-gradient(180deg, rgba(18,26,51,.9), rgba(15,23,48,.85));
       border-radius: var(--radius2); box-shadow: var(--shadow); padding: 14px 14px 12px; position:relative; overflow:hidden; min-height: 92px;
@@ -99,9 +100,7 @@
     tbody tr{cursor:pointer; transition: background .12s ease;}
     tbody tr:hover{background: rgba(106,228,255,.06);}
     tbody tr.selected{background: rgba(155,140,255,.10); outline: 1px solid rgba(155,140,255,.22);}
-    .tableFooter{display:flex; justify-content:space-between; align-items:center; padding: 10px 12px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); background: rgba(18,26,51,.35);}
-    .pager{display:flex; gap:8px; align-items:center}
-    .pager .btn{padding:8px 10px; border-radius: 10px; box-shadow:none}
+    /* tableFooter and pager styles moved to enhanced section below */
 
     .detail{position: sticky; top: 12px;}
     .detail .card{padding: 14px;}
@@ -167,6 +166,45 @@
     .dropZone .status.err{color: var(--bad)}
     .uploadActions{display:flex; gap:10px; justify-content:flex-end; padding: 0 16px 16px}
     .dataChip{display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:11px; border:1px solid rgba(62,240,168,.3); color:var(--good); background:rgba(62,240,168,.08)}
+
+    /* Sortable headers */
+    thead th.sortable{cursor:pointer; user-select:none; position:relative; padding-right:22px; transition: color .15s}
+    thead th.sortable:hover{color:var(--text)}
+    thead th.sortable::after{content:"⇅"; position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:10px; opacity:.4}
+    thead th.sortable.sort-asc::after{content:"▲"; opacity:.85; color:var(--good)}
+    thead th.sortable.sort-desc::after{content:"▼"; opacity:.85; color:var(--good)}
+
+    /* Enhanced pagination */
+    .tableFooter{display:flex; justify-content:space-between; align-items:center; padding: 10px 14px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); background: rgba(18,26,51,.45);}
+    .pager{display:flex; gap:6px; align-items:center}
+    .pager .btn{padding:7px 10px; border-radius:10px; box-shadow:none; font-size:12px}
+    .pageJump{display:flex; gap:4px; align-items:center}
+    .pageJump input{width:48px; padding:5px 6px; text-align:center; background:rgba(18,26,51,.7); border:1px solid var(--line); color:var(--text); border-radius:8px; font-size:12px; font-family:var(--mono)}
+    .pageSizeSelect{background:rgba(18,26,51,.7); border:1px solid var(--line); color:var(--text); padding:5px 8px; border-radius:8px; font-size:12px; min-width:auto}
+
+    /* Expand button */
+    .expandBtn{position:absolute; top:10px; right:10px; z-index:15; padding:6px 10px; border-radius:10px; font-size:11px; box-shadow:none; display:flex; align-items:center; gap:4px}
+    .tableCard{position:relative}
+    .tableCard.expanded{position:fixed; inset:12px; z-index:50; border-radius:var(--radius2); max-height:none}
+    .tableCard.expanded #tableWrap{max-height:calc(100vh - 110px)!important}
+
+    /* Base rate card in header */
+    .baseRateCard{display:flex; align-items:center; gap:8px; padding:8px 14px; border:1px solid var(--line); background:linear-gradient(180deg, rgba(18,26,51,.9), rgba(15,23,48,.9)); border-radius:14px; box-shadow:var(--shadow)}
+    .baseRateCard label{font-size:12px; color:var(--muted); white-space:nowrap}
+    .baseRateCard input{width:90px; padding:6px 8px; background:rgba(11,16,32,.8); border:1px solid var(--line); color:var(--text); border-radius:8px; font-size:13px; font-family:var(--mono); text-align:right}
+    .baseRateCard input:focus{outline:none; border-color:rgba(106,228,255,.4)}
+    .baseRateCard .unit{font-size:11px; color:var(--muted)}
+
+    /* KPI mini-bars */
+    .kpiBar{display:flex; height:6px; border-radius:3px; overflow:hidden; margin-top:8px; background:rgba(231,236,255,.08)}
+    .kpiBar .seg{height:100%; transition:width .3s ease}
+    .kpiBar .seg.good{background:var(--good)}
+    .kpiBar .seg.warn{background:var(--warn)}
+    .kpiBar .seg.bad{background:var(--bad)}
+    .kpiBar .seg.muted{background:rgba(231,236,255,.2)}
+
+    /* Backdrop overlay for expanded table */
+    .expandBackdrop{position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:49; display:none}
   </style>
 </head>
 <body>
@@ -176,7 +214,7 @@
         <h1>Fleet & Insurance Dashboard</h1>
         <div class="sub">
           Data-driven operations from uploaded CSV snapshots.
-          Rate source: <b>driver rate (active deal)</b> → <b>last driver rate (ended deal)</b> → <b>base rate $8,200/yr (no driver history)</b>.
+          Rate source: <b>driver rate (active deal)</b> → <b>last driver rate (ended deal)</b> → <b>base rate (configurable, no driver history)</b>.
         </div>
         <div class="chiprow">
           <div class="chip">Daily rate = Annual / 365</div>
@@ -184,10 +222,18 @@
           <div class="chip">Snapshot rate extrapolated for daily spend</div>
         </div>
       </div>
-      <div class="row">
-        <button class="btn" id="btnUpload">Upload CSVs</button>
-        <button class="btn secondary" id="btnExport">Export JSON</button>
-        <span id="dataSourceChip"></span>
+      <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end">
+        <div class="row">
+          <button class="btn" id="btnUpload">Upload CSVs</button>
+          <button class="btn secondary" id="btnExport">Export JSON</button>
+          <span id="dataSourceChip"></span>
+        </div>
+        <div class="baseRateCard">
+          <label for="baseRateInput">Insurance base rate</label>
+          <span class="unit">$</span>
+          <input type="number" id="baseRateInput" value="8200" min="0" step="100" />
+          <span class="unit">/yr</span>
+        </div>
       </div>
     </header>
 
@@ -244,10 +290,6 @@
         <select id="filterLocation">
           <option value="all">Location: All</option>
         </select>
-        <label style="display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--muted)">Base&nbsp;rate&nbsp;$/yr
-          <input type="number" id="baseRateInput" value="8200" min="0" step="100" style="width:90px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:13px" />
-        </label>
-
         <div class="matrixActions" id="dailyControls" style="display:none">
           <select id="rangePreset" style="min-width: 190px">
             <option value="last_month">Range: Last month (rolling)</option>
@@ -265,7 +307,9 @@
     <div class="tierStrip" id="tierStrip"></div>
 
     <section class="main">
+      <div class="expandBackdrop" id="expandBackdrop"></div>
       <div class="tableCard" id="leftPanel">
+        <button class="btn secondary expandBtn" id="btnExpand" title="Expand table">⛶ Expand</button>
         <div id="leftHeader" class="opHeader" style="display:none"></div>
 
         <div id="tableWrap" style="max-height: 62vh; overflow:auto">
@@ -275,9 +319,19 @@
         <div class="tableFooter" id="footer">
           <div id="countText">—</div>
           <div class="pager">
-            <button class="btn secondary" id="prevPage">Prev</button>
-            <span id="pageText" class="mono">—</span>
-            <button class="btn secondary" id="nextPage">Next</button>
+            <label style="font-size:12px;color:var(--muted)">Rows</label>
+            <select class="pageSizeSelect" id="pageSizeSelect">
+              <option value="20">20</option>
+              <option value="40" selected>40</option>
+              <option value="80">80</option>
+              <option value="200">200</option>
+            </select>
+            <button class="btn secondary" id="prevPage">◀ Prev</button>
+            <div class="pageJump">
+              <input type="number" id="pageJumpInput" min="1" title="Jump to page" />
+              <span id="pageText" class="mono">—</span>
+            </div>
+            <button class="btn secondary" id="nextPage">Next ▶</button>
           </div>
         </div>
       </div>
@@ -689,13 +743,15 @@ function updateDataChip(){
 let DB;
 let view="customers";
 let page=1;
-const pageSize=40;
+let pageSize=40;
 let selectedKey=null;
 let lastToastTimeout=null;
 let tierFilter="all";
 let OPPS=[];
 let oppSection="all";
 let dailyRange = {start:null, end:null};
+let sortCol=null, sortDir=null; // sorting state
+let tableExpanded=false;
 
 function toast(msg){
   const t=el("toast"); t.textContent=msg; t.style.display="block";
@@ -733,7 +789,19 @@ function renderKPIs(){
   for(const c of customers){ tierCounts[c.rate_tier]++; if(!c.has_active_deal) leadTierCounts[c.rate_tier]++; }
   const leads = customers.filter(c=>!c.has_active_deal).length;
 
+  // Vehicle & customer breakdowns
+  const totalVehiclesCount = vehicles.length;
+  const activeVehicles = vehicles.filter(v=>v.has_active_deal).length;
+  const noActiveVehicles = totalVehiclesCount - activeVehicles;
+  const totalCustomersCount = customers.length;
+  const activeCustomers = customers.filter(c=>c.has_active_deal).length;
+  const noActiveCustomers = totalCustomersCount - activeCustomers;
+  const vActivePct = totalVehiclesCount ? Math.round((activeVehicles/totalVehiclesCount)*100) : 0;
+  const cActivePct = totalCustomersCount ? Math.round((activeCustomers/totalCustomersCount)*100) : 0;
+
   el("kpis").innerHTML = [
+    {label:"Total vehicles", value: totalVehiclesCount.toLocaleString(), hint:`<span class="pill good" style="font-size:11px"><span class="dot"></span>Active: <b>${activeVehicles}</b></span> <span class="pill warn" style="font-size:11px"><span class="dot"></span>No deal: <b>${noActiveVehicles}</b></span><div class="kpiBar"><div class="seg good" style="width:${vActivePct}%"></div><div class="seg muted" style="width:${100-vActivePct}%"></div></div>`},
+    {label:"Total customers", value: totalCustomersCount.toLocaleString(), hint:`<span class="pill good" style="font-size:11px"><span class="dot"></span>Active: <b>${activeCustomers}</b></span> <span class="pill warn" style="font-size:11px"><span class="dot"></span>Leads: <b>${noActiveCustomers}</b></span><div class="kpiBar"><div class="seg good" style="width:${cActivePct}%"></div><div class="seg muted" style="width:${100-cActivePct}%"></div></div>`},
     {label:"Insurance spent (extrapolated)", value: money(Math.round(spentYTD)), hint:`<div class="kpiRow"><div class="kpiMini"><span>YTD</span> <b>${money(Math.round(spentYTD))}</b></div><div class="kpiMini"><span>MTD</span> <b>${money(Math.round(spentMTD))}</b></div><div class="kpiMini"><span>Daily avg</span> <b>${money(Math.round(dailySpendAll))}</b></div></div><div style="margin-top:4px;font-size:10px;color:var(--muted)">Projected from snapshot daily rate × days</div>`},
     {label:"Money on the floor (daily)", value: money(Math.round(mof.totalAvoidableDaily)), hint:`Vacant burn: <strong>${money(Math.round(mof.vacantDaily))}</strong> • High-tier premium: <strong>${money(Math.round(mof.highPremiumDaily))}</strong>`},
     {label:"Insurance efficiency score", value: `${efficiency} / 100`, hint:`Vacant: <strong>${vacantVehicles}</strong> • Expiring ≤30d: <strong>${expiring30}</strong> • High tier: <strong>${highTierVehicles}</strong>`},
@@ -868,9 +936,41 @@ function exportDailyCSV(){
 
 function footerFor(total,label,totalPages){
   el("countText").textContent = `${total.toLocaleString()} ${label} • showing ${(total?((page-1)*pageSize+1):0).toLocaleString()}–${Math.min(page*pageSize,total).toLocaleString()}`;
-  el("pageText").textContent = `Page ${page} / ${totalPages}`;
+  el("pageText").textContent = `/ ${totalPages}`;
+  const ji=el("pageJumpInput"); ji.value=page; ji.max=totalPages;
   el("prevPage").disabled = (page<=1); el("nextPage").disabled = (page>=totalPages);
 }
+function wireSortHeaders(){
+  el("table").querySelectorAll("th.sortable").forEach(th=>{
+    th.addEventListener("click", ()=>onSort(th.getAttribute("data-sort")));
+  });
+}
+function toggleExpand(){
+  tableExpanded=!tableExpanded;
+  const panel=el("leftPanel"), backdrop=el("expandBackdrop"), btn=el("btnExpand");
+  panel.classList.toggle("expanded", tableExpanded);
+  backdrop.style.display=tableExpanded?"block":"none";
+  btn.innerHTML=tableExpanded?"⛶ Collapse":"⛶ Expand";
+}
+
+// ---------- Sorting ----------
+function sortRows(rows, col, dir){
+  if(!col||!dir) return rows;
+  const sorted=[...rows];
+  const mult=dir==="asc"?1:-1;
+  sorted.sort((a,b)=>{
+    let va=a[col], vb=b[col];
+    if(va==null) va="";
+    if(vb==null) vb="";
+    if(typeof va==="number" && typeof vb==="number") return (va-vb)*mult;
+    const na=parseFloat(va), nb=parseFloat(vb);
+    if(!isNaN(na)&&!isNaN(nb)) return (na-nb)*mult;
+    return String(va).localeCompare(String(vb))*mult;
+  });
+  return sorted;
+}
+function sortClass(col){ if(sortCol!==col) return "sortable"; return "sortable sort-"+(sortDir||"asc"); }
+function onSort(col){ if(sortCol===col){ sortDir=sortDir==="asc"?"desc":"asc"; } else { sortCol=col; sortDir="asc"; } page=1; renderTable(); }
 
 // ---------- Rendering Tables ----------
 function renderTable(){
@@ -883,25 +983,24 @@ function renderTable(){
 
   if(view==="customers"){
     wrap.classList.remove("matrixWrap");
-    rows = filterCustomers(DB.customers); paged = paginate(rows);
-    headers = `<thead><tr><th style="width:84px">ID</th><th>Name</th><th style="width:150px">DL #</th><th style="width:150px">TLC #</th><th style="width:170px">UW rate</th><th style="width:120px">Tier</th><th style="width:160px">Pipeline</th><th style="width:150px">Active deal</th><th style="width:140px">Deal #</th><th style="width:200px">VIN</th></tr></thead>`;
+    rows = filterCustomers(DB.customers); rows = sortRows(rows, sortCol, sortDir); paged = paginate(rows);
+    headers = `<thead><tr><th class="${sortClass('id')}" data-sort="id" style="width:84px">ID</th><th class="${sortClass('name')}" data-sort="name">Name</th><th class="${sortClass('dl_number')}" data-sort="dl_number" style="width:150px">DL #</th><th style="width:150px">TLC #</th><th class="${sortClass('insurance_annual_rate')}" data-sort="insurance_annual_rate" style="width:170px">UW rate</th><th class="${sortClass('rate_tier')}" data-sort="rate_tier" style="width:120px">Tier</th><th style="width:160px">Pipeline</th><th class="${sortClass('has_active_deal')}" data-sort="has_active_deal" style="width:150px">Active deal</th><th style="width:140px">Deal #</th><th style="width:200px">VIN</th></tr></thead>`;
     bodyHTML = `<tbody>` + paged.slice.map(c=>{
       const pipeline=c.has_active_deal?`<span class="small">—</span>`:`<span class="pill"><span class="dot"></span>${escapeHTML(c.lead_stage||"Lead")}</span>`;
       return `<tr class="${selectedKey===c.id?"selected":""}" data-key="${c.id}"><td class="mono">${c.id}</td><td>${escapeHTML(c.name)}</td><td class="mono">${c.dl_number}</td><td class="mono">${c.tlc_number}</td><td>${money(c.insurance_annual_rate)} <span class="small">/yr</span></td><td>${tierPill(c.rate_tier)}</td><td>${pipeline}</td><td>${dealPill(c.has_active_deal)}</td><td class="mono">${c.deal_number?c.deal_number:"<span class='small'>—</span>"}</td><td class="mono">${c.vin?c.vin:"<span class='small'>—</span>"}</td></tr>`;
     }).join("") + `</tbody>`;
-    table.innerHTML = headers + bodyHTML; footerFor(paged.total,"customers",paged.totalPages);
-    table.querySelectorAll("tbody tr").forEach(tr=>{ tr.addEventListener("click", ()=>{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });
+    table.innerHTML = headers + bodyHTML; footerFor(paged.total,"customers",paged.totalPages); wireSortHeaders();
   } else if(view==="vehicles"){
     wrap.classList.remove("matrixWrap");
-    rows = filterVehicles(DB.vehicles); paged = paginate(rows);
-    headers = `<thead><tr><th style="width:84px">ID</th><th style="min-width:220px">Vehicle</th><th style="width:220px">VIN</th><th style="width:120px">Plate</th><th style="width:140px">Deal</th><th style="width:140px">Ends</th><th style="width:140px">Location</th><th style="width:190px">Insurance daily</th><th style="width:110px">Tier</th></tr></thead>`;
+    rows = filterVehicles(DB.vehicles); rows = sortRows(rows, sortCol, sortDir); paged = paginate(rows);
+    headers = `<thead><tr><th class="${sortClass('id')}" data-sort="id" style="width:84px">ID</th><th class="${sortClass('type_make_model')}" data-sort="type_make_model" style="min-width:220px">Vehicle</th><th style="width:220px">VIN</th><th style="width:120px">Plate</th><th class="${sortClass('has_active_deal')}" data-sort="has_active_deal" style="width:140px">Deal</th><th class="${sortClass('deal_end_date')}" data-sort="deal_end_date" style="width:140px">Ends</th><th class="${sortClass('vehicle_location')}" data-sort="vehicle_location" style="width:140px">Location</th><th class="${sortClass('insurance_daily_rate')}" data-sort="insurance_daily_rate" style="width:190px">Insurance daily</th><th class="${sortClass('insurance_annual_rate')}" data-sort="insurance_annual_rate" style="width:110px">Tier</th></tr></thead>`;
     bodyHTML = `<tbody>` + paged.slice.map(v=>{
       const dealStatus=v.has_active_deal?"active":(v.last_driver_customer_id?"ended":"none");
       const dealP=dealStatus==="active"?`<span class="pill good"><span class="dot"></span>Active</span>`:dealStatus==="ended"?`<span class="pill warn"><span class="dot"></span>Ended</span>`:`<span class="pill"><span class="dot"></span>None</span>`;
       const endsSoon=v.has_active_deal && dealEndsSoon(v.deal_end_date), endCell=v.deal_end_date?`<span class="mono">${v.deal_end_date}</span> ${endsSoon?`<span class="pill warn" style="margin-left:6px"><span class="dot"></span>≤30d</span>`:""}`:`<span class="small">—</span>`;
       return `<tr class="${selectedKey===v.vin?"selected":""}" data-key="${v.vin}"><td class="mono">${v.id}</td><td>${escapeHTML(v.type_make_model)}</td><td class="mono">${v.vin}</td><td class="mono">${v.plate}</td><td>${dealP}</td><td>${endCell}</td><td>${escapeHTML(v.vehicle_location)}</td><td>${money2(v.insurance_daily_rate)} <span class="small">/day</span> ${ratePill(v.insurance_rate_source)}</td><td>${tierPill(rateTier(v.insurance_annual_rate))}</td></tr>`;
     }).join("") + `</tbody>`;
-    table.innerHTML = headers + bodyHTML; footerFor(paged.total,"vehicles",paged.totalPages);
+    table.innerHTML = headers + bodyHTML; footerFor(paged.total,"vehicles",paged.totalPages); wireSortHeaders();
     table.querySelectorAll("tbody tr").forEach(tr=>{ tr.addEventListener("click", ()=>{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });
   } else if(view==="opportunities"){
     wrap.classList.remove("matrixWrap");
@@ -912,7 +1011,7 @@ function renderTable(){
     if(tierFilter!=="all") oppRows = oppRows.filter(o => (o.lead_tier || "High") === tierFilter);
     const q=getSearchTerm(); if(q) oppRows = oppRows.filter(o=> [o.kind,o.vehicle,o.vin,o.location,o.lead_name||"",o.lead_id||"",o.lead_tier||"",o.current_tier].join(" ").toLowerCase().includes(q));
     paged = paginate(oppRows);
-    headers = `<thead><tr><th style="width:160px">Type</th><th>Vehicle</th><th style="width:220px">VIN</th><th style="width:140px">Ends</th><th style="width:130px">Current /day</th><th style="width:110px">Current tier</th><th style="width:160px">Suggested lead</th><th style="width:100px">Lead tier</th><th style="width:140px">Est. save /day</th></tr></thead>`;
+    headers = `<thead><tr><th class="${sortClass('kind')}" data-sort="kind" style="width:160px">Type</th><th class="${sortClass('vehicle')}" data-sort="vehicle">Vehicle</th><th style="width:220px">VIN</th><th class="${sortClass('deal_end')}" data-sort="deal_end" style="width:140px">Ends</th><th class="${sortClass('current_daily')}" data-sort="current_daily" style="width:130px">Current /day</th><th style="width:110px">Current tier</th><th style="width:160px">Suggested lead</th><th style="width:100px">Lead tier</th><th class="${sortClass('savings_daily')}" data-sort="savings_daily" style="width:140px">Est. save /day</th></tr></thead>`;
     bodyHTML = `<tbody>` + paged.slice.map(o=>{
       const typeP = o.kind==="Vacant" ? `<span class="pill bad"><span class="dot"></span>Vacant</span>` : o.kind.startsWith("Expiring") ? `<span class="pill warn"><span class="dot"></span>Expiring</span>` : `<span class="pill"><span class="dot"></span>High-tier</span>`;
       const endCell = o.deal_end ? `<span class="mono">${o.deal_end}</span>` : `<span class="small">—</span>`;
@@ -920,7 +1019,7 @@ function renderTable(){
       const saveDay = (o.savings_daily!=null) ? money2(o.savings_daily) : "<span class='small'>—</span>";
       return `<tr class="${selectedKey===o.vin?"selected":""}" data-key="${o.vin}"><td>${typeP}</td><td>${escapeHTML(o.vehicle)}<div class="small">${escapeHTML(o.location)}</div></td><td class="mono">${o.vin}</td><td>${endCell}</td><td>${money2(o.current_daily)} <span class="small">/day</span></td><td>${tierPill(o.current_tier)}</td><td>${leadName}<div class="small mono">${o.lead_id || ""}</div></td><td>${leadTier}</td><td>${saveDay}</td></tr>`;
     }).join("") + `</tbody>`;
-    table.innerHTML = headers + bodyHTML; footerFor(paged.total,"opportunities",paged.totalPages);
+    table.innerHTML = headers + bodyHTML; footerFor(paged.total,"opportunities",paged.totalPages); wireSortHeaders();
     table.querySelectorAll("tbody tr").forEach(tr=>{ tr.addEventListener("click", ()=>{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });
   } else {
     // Daily Spend Matrix — extrapolates current snapshot rate across selected date range
@@ -1082,12 +1181,16 @@ function init(){
   }
 
   // Wire up tabs
-  el("tabCustomers").addEventListener("click", ()=>{view="customers"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
-  el("tabVehicles").addEventListener("click", ()=>{view="vehicles"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
-  el("tabOpp").addEventListener("click", ()=>{view="opportunities"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
-  el("tabDaily").addEventListener("click", ()=>{view="daily"; page=1; selectedKey=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
+  el("tabCustomers").addEventListener("click", ()=>{view="customers"; page=1; selectedKey=null; sortCol=null; sortDir=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
+  el("tabVehicles").addEventListener("click", ()=>{view="vehicles"; page=1; selectedKey=null; sortCol=null; sortDir=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
+  el("tabOpp").addEventListener("click", ()=>{view="opportunities"; page=1; selectedKey=null; sortCol=null; sortDir=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
+  el("tabDaily").addEventListener("click", ()=>{view="daily"; page=1; selectedKey=null; sortCol=null; sortDir=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
   ["search","filterDeal","filterLocation"].forEach(id=>{ el(id).addEventListener("input", ()=>{page=1; selectedKey=null; renderTable(); renderDetail();}); el(id).addEventListener("change", ()=>{page=1; selectedKey=null; renderTable(); renderDetail();}); });
   el("prevPage").addEventListener("click", ()=>{page--; renderTable();}); el("nextPage").addEventListener("click", ()=>{page++; renderTable();});
+  el("pageSizeSelect").addEventListener("change", function(){ pageSize=parseInt(this.value)||40; page=1; renderTable(); });
+  el("pageJumpInput").addEventListener("change", function(){ const v=parseInt(this.value); if(!isNaN(v)&&v>=1){ page=v; renderTable(); } });
+  el("btnExpand").addEventListener("click", toggleExpand);
+  el("expandBackdrop").addEventListener("click", toggleExpand);
   el("btnExport").addEventListener("click", exportJSON);
   el("rangePreset").addEventListener("change", ()=>{ const preset=el("rangePreset").value; if(preset==="custom") return; dailyRange = computeRangeFromPreset(preset); setDailyControlsFromRange(dailyRange); page=1; selectedKey=null; if(view==="daily"){ renderTable(); renderDetail(); } });
   el("btnApplyRange").addEventListener("click", ()=>{ dailyRange = computeRangeFromPreset(el("rangePreset").value); page=1; selectedKey=null; if(view==="daily"){ renderTable(); renderDetail(); toast(`Applied range ${dailyRange.start} → ${dailyRange.end}`); } });
