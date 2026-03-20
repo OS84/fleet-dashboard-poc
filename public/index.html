@@ -244,7 +244,7 @@
         <div class="chiprow">
           <div class="chip">Daily rate = Annual / 365</div>
           <div class="chip">Daily matrix + Match Simulator</div>
-          <div class="chip">Snapshot rate extrapolated for daily spend</div>
+          <div class="chip">Daily spend from snapshot rates</div>
         </div>
       </div>
       <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end">
@@ -285,7 +285,7 @@
           <div class="dropZone" id="dropVehicles">
             <div class="label">Vehicles CSV</div>
             Drop file here or click to browse<br>
-            <span class="small">Columns: Customer DL, Deal Status, VIN, Brand, Model, Model Year, Plate Number, Diamond Number, etc.</span>
+            <span class="small">Columns: Driver License #, TLC ID #, Deal Status, VIN/Short VIN, Brand, Model, Model Year, Plate Number, Diamond Number, etc.</span>
             <div class="status" id="statusVehicles"></div>
             <input type="file" accept=".csv,.tsv,.txt" style="display:none" id="fileVehicles">
           </div>
@@ -478,10 +478,6 @@ function parseRate(s){
   const n=parseFloat(cleaned);
   return isNaN(n)?null:n;
 }
-// Daily spend extrapolation: since CSV is a point-in-time snapshot,
-// we project the current rate for each vehicle across the requested date range.
-// In production this will be replaced by actual daily time-series data.
-
 // Normalize column names to handle variations
 function normCol(rows, candidates){
   if(!rows.length)return null;
@@ -538,8 +534,8 @@ function buildDB(custRows, vehRows){
 
   // --- Resolve vehicle CSV column names ---
   const vCols={
-    dl: normCol(vehRows,["Customer DL"]),
-    tlc: normCol(vehRows,["Customer TLC"]),
+    dl: normCol(vehRows,["Driver License #","Customer DL","DL","Driver License"]),
+    tlc: normCol(vehRows,["TLC ID #","Customer TLC","TLC"]),
     dealStatus: normCol(vehRows,["Deal Status"]),
     lease: normCol(vehRows,["Current Lease"]),
     vin: normCol(vehRows,["VIN"]),
@@ -549,12 +545,12 @@ function buildDB(custRows, vehRows){
     year: normCol(vehRows,["Model Year"]),
     color: normCol(vehRows,["Exterior Color"]),
     plate: normCol(vehRows,["Plate Number"]),
-    plateExp: normCol(vehRows,["Plate Number Expiration Date"]),
+    plateExp: normCol(vehRows,["Temporary Plate Expiration Date","Plate Number Expiration Date","Plate Expiration"]),
     plateStatus: normCol(vehRows,["Plate Status"]),
     diamond: normCol(vehRows,["Diamond Number"]),
     diamondExp: normCol(vehRows,["Diamond Expiration"]),
-    startDate: normCol(vehRows,["Start Deal Date"]),
-    endDate: normCol(vehRows,["End Deal Date"]),
+    startDate: normCol(vehRows,["Lease Start Date","Start Deal Date"]),
+    endDate: normCol(vehRows,["Lease End Date","End Deal Date"]),
     channel: normCol(vehRows,["Sales Channel"]),
     location: normCol(vehRows,["Physical Location"]),
   };
@@ -645,7 +641,8 @@ function buildDB(custRows, vehRows){
       current_driver_customer_id:currentDriverId, last_driver_customer_id:lastDriverId,
       last_driver_annual_rate:lastDriverAnnual,
       status_changed_at:startDate||dateISO(today0()),
-      color, plate_status:plateStatus, plate_expiration:plateExp, deal_status_raw:dealStatus
+      color, plate_status:plateStatus, plate_expiration:plateExp, deal_status_raw:dealStatus,
+      tlc_number:custTLC||null
     });
   }
 
@@ -805,7 +802,7 @@ function setupUploadUI(){
       }
     } else {
       pendingVehText=text;
-      const hasVIN=rows.length>0&&normCol(rows,["VIN"]);
+      const hasVIN=rows.length>0&&(normCol(rows,["VIN"])||normCol(rows,["Short VIN"]));
       if(rows.length>0&&hasVIN){
         statusV.className="status ok";
         statusV.textContent=`${rows.length} vehicles parsed`;
@@ -1016,9 +1013,14 @@ function toast(msg){
 function computeSpend(){
   const vehicles=DB.vehicles;
   const dailySpendAll=vehicles.reduce((s,v)=>s+(v.insurance_daily_rate || (v.insurance_annual_rate/365)),0);
-  const daysYTD=Math.max(1, Math.round((today0()-startOfYear())/86400000)+1);
+  // Use earliest date from data instead of start-of-year
+  let earliest=null;
+  for(const c of DB.customers){ if(c.cust_deal_date){ const d=parseISO(c.cust_deal_date); if(!earliest||d<earliest) earliest=d; } }
+  for(const v of vehicles){ if(v.deal_start_date){ const d=parseISO(v.deal_start_date); if(!earliest||d<earliest) earliest=d; } }
+  const dataStart = earliest || startOfYear();
+  const daysFromStart=Math.max(1, Math.round((today0()-dataStart)/86400000)+1);
   const daysMTD=Math.max(1, Math.round((today0()-startOfMonth())/86400000)+1);
-  return {dailySpendAll, spentYTD: dailySpendAll*daysYTD, spentMTD: dailySpendAll*daysMTD};
+  return {dailySpendAll, spentFromStart: dailySpendAll*daysFromStart, spentMTD: dailySpendAll*daysMTD, dataStartDate: dateISO(dataStart)};
 }
 function computeMoneyOnFloor(){
   const vehicles=DB.vehicles;
@@ -1030,7 +1032,7 @@ function computeMoneyOnFloor(){
 }
 function renderKPIs(){
   const customers=DB.customers, vehicles=DB.vehicles;
-  const {dailySpendAll, spentYTD, spentMTD}=computeSpend();
+  const {dailySpendAll, spentFromStart, spentMTD, dataStartDate}=computeSpend();
   const mof=computeMoneyOnFloor();
   const vacantVehicles = vehicles.filter(v=>!v.has_active_deal && !v.last_driver_customer_id).length;
   const expiring30 = vehicles.filter(v=>v.has_active_deal && dealEndsSoon(v.deal_end_date)).length;
@@ -1055,7 +1057,7 @@ function renderKPIs(){
   el("kpis").innerHTML = [
     {label:"Total vehicles", value: totalVehiclesCount.toLocaleString(), hint:`<span class="pill good" style="font-size:11px"><span class="dot"></span>Active: <b>${activeVehicles}</b></span> <span class="pill warn" style="font-size:11px"><span class="dot"></span>No deal: <b>${noActiveVehicles}</b></span><div class="kpiBar"><div class="seg good" style="width:${vActivePct}%"></div><div class="seg muted" style="width:${100-vActivePct}%"></div></div>`, trendKey:"total_vehicles"},
     {label:"Total customers", value: totalCustomersCount.toLocaleString(), hint:`<span class="pill good" style="font-size:11px"><span class="dot"></span>Active: <b>${activeCustomers}</b></span> <span class="pill warn" style="font-size:11px"><span class="dot"></span>Leads: <b>${noActiveCustomers}</b></span><div class="kpiBar"><div class="seg good" style="width:${cActivePct}%"></div><div class="seg muted" style="width:${100-cActivePct}%"></div></div>`, trendKey:"total_customers"},
-    {label:"Insurance spent (extrapolated)", value: money(Math.round(spentYTD)), hint:`<div class="kpiRow"><div class="kpiMini"><span>YTD</span> <b>${money(Math.round(spentYTD))}</b></div><div class="kpiMini"><span>MTD</span> <b>${money(Math.round(spentMTD))}</b></div><div class="kpiMini"><span>Daily avg</span> <b>${money(Math.round(dailySpendAll))}</b></div></div><div style="margin-top:4px;font-size:10px;color:var(--muted)">Projected from snapshot daily rate × days</div>`, trendKey:"daily_spend"},
+    {label:"Insurance spend", value: money(Math.round(spentFromStart)), hint:`<div class="kpiRow"><div class="kpiMini"><span>Since ${dataStartDate}</span> <b>${money(Math.round(spentFromStart))}</b></div><div class="kpiMini"><span>MTD</span> <b>${money(Math.round(spentMTD))}</b></div><div class="kpiMini"><span>Daily avg</span> <b>${money(Math.round(dailySpendAll))}</b></div></div>`, trendKey:"daily_spend"},
     {label:"Money on the floor (daily)", value: money(Math.round(mof.totalAvoidableDaily)), hint:`Vacant burn: <strong>${money(Math.round(mof.vacantDaily))}</strong> • High-tier premium: <strong>${money(Math.round(mof.highPremiumDaily))}</strong>`, trendKey:"money_on_floor"},
     {label:"Insurance efficiency score", value: `${efficiency} / 100`, hint:`Vacant: <strong>${vacantVehicles}</strong> • Expiring ≤30d: <strong>${expiring30}</strong> • High tier: <strong>${highTierVehicles}</strong>`, trendKey:"efficiency_score"},
     {label:"Pipeline & tiers", value: `${leads.toLocaleString()} leads`, hint:`All tiers: Low ${tierCounts.Low} • Med ${tierCounts.Med} • High ${tierCounts.High}<br/>Lead tiers: Low ${leadTierCounts.Low} • Med ${leadTierCounts.Med} • High ${leadTierCounts.High}`, trendKey:"leads_count"}
@@ -1174,7 +1176,17 @@ function renderOppHeader(){
 }
 
 // ---------- Daily Spend Config ----------
-function getDefaultDailyRange(){ const end=today0(), start=addDays(end, -29); return {start: dateISO(start), end: dateISO(end)}; }
+function getDefaultDailyRange(){
+  const end=today0();
+  // Use earliest date from the data (deal dates, lease start dates) if available
+  if(DB){
+    let earliest=null;
+    for(const c of DB.customers){ if(c.cust_deal_date){ const d=parseISO(c.cust_deal_date); if(!earliest||d<earliest) earliest=d; } }
+    for(const v of DB.vehicles){ if(v.deal_start_date){ const d=parseISO(v.deal_start_date); if(!earliest||d<earliest) earliest=d; } }
+    if(earliest && earliest<end) return {start: dateISO(earliest), end: dateISO(end)};
+  }
+  const start=addDays(end, -29); return {start: dateISO(start), end: dateISO(end)};
+}
 function setDailyControlsFromRange(range){ el("rangeStart").value = range.start; el("rangeEnd").value = range.end; }
 function computeRangeFromPreset(preset){
   const end=today0();
@@ -1288,7 +1300,7 @@ function renderTable(){
     table.innerHTML = headers + bodyHTML; footerFor(paged.total,"opportunities",paged.totalPages); wireSortHeaders();
     table.querySelectorAll("tbody tr").forEach(tr=>{ tr.addEventListener("click", ()=>{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });
   } else {
-    // Daily Spend Matrix — extrapolates current snapshot rate across selected date range
+    // Daily Spend Matrix — shows current snapshot rate across selected date range
     wrap.classList.add("matrixWrap");
     const range = dailyRange || getDefaultDailyRange(), dates = listDatesInclusive(range.start, range.end);
     rows = filterVehicles(DB.vehicles);
@@ -1317,7 +1329,7 @@ function renderTable(){
 function renderDetail(){
   const pane=el("detail");
   if(!selectedKey){
-    pane.innerHTML = `<div class="card"><h2>Details</h2><div class="muted">Click a row to inspect the record.</div><div class="divider"></div><div class="small">Use <b>Opportunities</b> to match low-rate leads to vacant/expiring vehicles and see estimated savings. <b>Daily Spend</b> extrapolates the current snapshot rate across the selected date range.</div></div>`;
+    pane.innerHTML = `<div class="card"><h2>Details</h2><div class="muted">Click a row to inspect the record.</div><div class="divider"></div><div class="small">Use <b>Opportunities</b> to match low-rate leads to vacant/expiring vehicles and see estimated savings. <b>Daily Spend</b> shows the current snapshot rate across the selected date range.</div></div>`;
     return;
   }
   

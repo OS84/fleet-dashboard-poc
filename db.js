@@ -75,7 +75,8 @@ function initSchema() {
       color TEXT,
       plate_status TEXT,
       plate_expiration TEXT,
-      deal_status_raw TEXT
+      deal_status_raw TEXT,
+      tlc_number TEXT
     );
 
     -- Aggregated daily KPIs (computed on upload for fast querying)
@@ -151,15 +152,15 @@ function saveSnapshot(uploadDate, baseRate, customers, vehicles, kpis) {
        has_active_deal, deal_number, deal_start_date, deal_end_date, sales_channel, vehicle_location,
        insurance_annual_rate, insurance_daily_rate, insurance_rate_source,
        current_driver_customer_id, last_driver_customer_id, last_driver_annual_rate,
-       status_changed_at, color, plate_status, plate_expiration, deal_status_raw)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+       status_changed_at, color, plate_status, plate_expiration, deal_status_raw, tlc_number)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
     for (const v of vehicles) {
       vehStmt.run(snapId, v.id, v.type_make_model, v.vin, v.plate, v.diamond, v.diamond_expiration_date,
         v.has_active_deal ? 1 : 0, v.deal_number, v.deal_start_date, v.deal_end_date,
         v.sales_channel, v.vehicle_location, v.insurance_annual_rate, v.insurance_daily_rate,
         v.insurance_rate_source, v.current_driver_customer_id, v.last_driver_customer_id,
         v.last_driver_annual_rate, v.status_changed_at, v.color, v.plate_status, v.plate_expiration,
-        v.deal_status_raw);
+        v.deal_status_raw, v.tlc_number || null);
     }
 
     // Insert daily KPIs
