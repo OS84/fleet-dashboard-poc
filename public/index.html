@@ -831,7 +831,7 @@ function setupUploadUI(){
       DB=buildDB(custRows,vehRows);
       saveCSVsToStorage(pendingCustText,pendingVehText);
       OPPS=buildOpportunities(); page=1; selectedKey=null; tierFilter="all"; oppSection="all";
-      dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange);
+      dailyRange=getDefaultDailyRange(); setDailyControlsFromRange(dailyRange);
       refreshAll(); updateDataChip();
 
       // Save to server if available
@@ -943,7 +943,7 @@ async function loadSnapshotById(id){
     // Rebuild DB from snapshot data
     DB = rebuildDBFromSnapshot(data);
     OPPS=buildOpportunities(); page=1; selectedKey=null; tierFilter="all"; oppSection="all";
-    dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange);
+    dailyRange=getDefaultDailyRange(); setDailyControlsFromRange(dailyRange);
     refreshAll(); renderSnapshotBar(); renderHistoryPanel(); renderTrendHints();
     toast(`Viewing snapshot: ${data.snapshot.upload_date}`);
   }catch(e){
@@ -1413,7 +1413,7 @@ function rebuildFromStorage(){
     const custRows=parseCSV(stored.custText);
     const vehRows=parseCSV(stored.vehText);
     DB=buildDB(custRows,vehRows);
-    OPPS=buildOpportunities(); dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange);
+    OPPS=buildOpportunities(); dailyRange=getDefaultDailyRange(); setDailyControlsFromRange(dailyRange);
     refreshAll();
     return true;
   }catch(e){ console.warn("Rebuild failed:",e); return false; }
@@ -1475,7 +1475,7 @@ async function init(){
   }
 
   if(DB){
-    OPPS=buildOpportunities(); dailyRange=getDefaultDailyRange(); el("rangePreset").value="last_month"; setDailyControlsFromRange(dailyRange);
+    OPPS=buildOpportunities(); dailyRange=getDefaultDailyRange(); setDailyControlsFromRange(dailyRange);
   }
 
   // Wire up tabs
