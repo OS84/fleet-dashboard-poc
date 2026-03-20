@@ -11,6 +11,9 @@
     "type": "git",
     "url": "http://local_proxy@127.0.0.1:41037/git/OS84/fleet-dashboard-poc"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
