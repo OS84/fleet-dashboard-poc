@@ -328,14 +328,7 @@
           <option value="all">Location: All</option>
         </select>
         <div class="matrixActions" id="dailyControls" style="display:none">
-          <select id="rangePreset" style="min-width: 190px">
-            <option value="last_month">Range: Last month (rolling)</option>
-            <option value="mtd">Range: Month to date</option>
-            <option value="custom">Range: Custom</option>
-          </select>
-          <input type="date" id="rangeStart" />
-          <input type="date" id="rangeEnd" />
-          <button class="btn secondary miniBtn" id="btnApplyRange">Apply</button>
+          <span class="small" style="color:var(--muted)">Showing data for uploaded snapshot dates only</span>
           <button class="btn miniBtn" id="btnExportCSV">Export CSV</button>
         </div>
       </div>
@@ -632,7 +625,7 @@ function buildDB(custRows, vehRows){
     const vid="V"+pad(vSeq++,5);
     vehicles.push({
       id:vid, type_make_model:typeModel,
-      vin:vehicleVin, plate, diamond, diamond_expiration_date:diamondExp,
+      vin:vehicleVin, short_vin:shortVin||"", plate, diamond, diamond_expiration_date:diamondExp,
       has_active_deal:hasDeal, deal_number:dealNumber,
       deal_start_date:startDate, deal_end_date:endDate, sales_channel:channel||null,
       vehicle_location:location,
@@ -1158,7 +1151,7 @@ function buildOpportunities(){
     const currentDaily=v.insurance_daily_rate, leadDaily=lead?lead.insurance_daily_rate:null;
     const savingsDaily=(leadDaily!=null)?Math.max(0,currentDaily-leadDaily):null;
     out.push({
-      kind:item.kind, vin:v.vin, vehicle:v.type_make_model, location:v.vehicle_location, deal_end:v.deal_end_date,
+      kind:item.kind, vin:v.vin, short_vin:v.short_vin||"", vehicle:v.type_make_model, location:v.vehicle_location, deal_end:v.deal_end_date,
       current_tier: rateTier(v.insurance_annual_rate), current_daily: currentDaily, current_source: v.insurance_rate_source,
       lead_id: lead?lead.id:null, lead_name: lead?lead.name:null, lead_tier: lead?lead.rate_tier:null,
       lead_daily: leadDaily, savings_daily: savingsDaily, savings_30d: savingsDaily!=null ? savingsDaily*30 : null
@@ -1187,28 +1180,24 @@ function getDefaultDailyRange(){
   }
   const start=addDays(end, -29); return {start: dateISO(start), end: dateISO(end)};
 }
-function setDailyControlsFromRange(range){ el("rangeStart").value = range.start; el("rangeEnd").value = range.end; }
-function computeRangeFromPreset(preset){
-  const end=today0();
-  if(preset==="mtd"){ const start=startOfMonth(); return {start: dateISO(start), end: dateISO(end)}; }
-  if(preset==="last_month"){ const start=addDays(end, -29); return {start: dateISO(start), end: dateISO(end)}; }
-  const s=el("rangeStart").value, e=el("rangeEnd").value; if(!s || !e) return getDefaultDailyRange(); return {start: s, end: e};
-}
+function setDailyControlsFromRange(range){ /* no-op: daily tab now uses snapshot dates */ }
 function listDatesInclusive(startISO,endISO){ const out=[]; let d=parseISO(startISO); const end=parseISO(endISO); while(d<=end){ out.push(dateISO(d)); d=addDays(d,1); } return out; }
 function exportDailyCSV(){
-  const range=dailyRange || getDefaultDailyRange(), dates=listDatesInclusive(range.start, range.end);
+  const snapshotDates = allSnapshots.map(s=>s.upload_date).sort();
+  const dates = snapshotDates.length > 0 ? snapshotDates : [dateISO(today0())];
   let vehicles = filterVehicles(DB.vehicles);
-  const q=getSearchTerm(); if(q) vehicles = vehicles.filter(v=> [v.vin,v.type_make_model,v.plate,v.deal_number||"",v.vehicle_location].join(" ").toLowerCase().includes(q));
-  const lines=[["vin","vehicle","date","daily_rate","annual_rate","driver_dl","driver_customer_id","rate_source"].join(",")];
+  const q=getSearchTerm(); if(q) vehicles = vehicles.filter(v=> [v.vin,v.short_vin||"",v.type_make_model,v.plate,v.deal_number||"",v.vehicle_location].join(" ").toLowerCase().includes(q));
+  const lines=[["short_vin","vehicle","date","daily_rate","annual_rate","driver_dl","driver_customer_id","rate_source"].join(",")];
   for(const v of vehicles){
     const driverId = v.current_driver_customer_id || v.last_driver_customer_id || "";
     const driver = driverId ? DB.index.customersById[driverId] : null;
     const dl = driver ? (driver.dl_number || "") : "";
     for(const dt of dates){
-      lines.push([`"${v.vin}"`, `"${v.type_make_model.replace(/"/g,'""')}"`, dt, (v.insurance_daily_rate||0).toFixed(2), Math.round(v.insurance_annual_rate||0), `"${dl}"`, `"${driverId}"`, `"${v.insurance_rate_source||""}"`].join(","));
+      lines.push([`"${v.short_vin||""}"`, `"${v.type_make_model.replace(/"/g,'""')}"`, dt, (v.insurance_daily_rate||0).toFixed(2), Math.round(v.insurance_annual_rate||0), `"${dl}"`, `"${driverId}"`, `"${v.insurance_rate_source||""}"`].join(","));
     }
   }
-  const blob=new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`daily_spend_${range.start}_to_${range.end}.csv`; a.click(); URL.revokeObjectURL(a.href); toast("Exported daily spend CSV.");
+  const first=dates[0]||"", last=dates[dates.length-1]||"";
+  const blob=new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`daily_spend_${first}_to_${last}.csv`; a.click(); URL.revokeObjectURL(a.href); toast("Exported daily spend CSV.");
 }
 
 function footerFor(total,label,totalPages){
@@ -1261,22 +1250,23 @@ function renderTable(){
   if(view==="customers"){
     wrap.classList.remove("matrixWrap");
     rows = filterCustomers(DB.customers); rows = sortRows(rows, sortCol, sortDir); paged = paginate(rows);
-    headers = `<thead><tr><th class="${sortClass('id')}" data-sort="id" style="width:84px">ID</th><th class="${sortClass('name')}" data-sort="name">Name</th><th class="${sortClass('dl_number')}" data-sort="dl_number" style="width:150px">DL #</th><th style="width:150px">TLC #</th><th class="${sortClass('insurance_annual_rate')}" data-sort="insurance_annual_rate" style="width:170px">UW rate</th><th class="${sortClass('rate_tier')}" data-sort="rate_tier" style="width:120px">Tier</th><th style="width:160px">Pipeline</th><th class="${sortClass('has_active_deal')}" data-sort="has_active_deal" style="width:150px">Active deal</th><th style="width:140px">Deal #</th><th style="width:200px">VIN</th></tr></thead>`;
+    headers = `<thead><tr><th class="${sortClass('id')}" data-sort="id" style="width:84px">ID</th><th class="${sortClass('name')}" data-sort="name">Name</th><th class="${sortClass('dl_number')}" data-sort="dl_number" style="width:150px">DL #</th><th style="width:150px">TLC #</th><th class="${sortClass('insurance_annual_rate')}" data-sort="insurance_annual_rate" style="width:170px">UW rate</th><th class="${sortClass('rate_tier')}" data-sort="rate_tier" style="width:120px">Tier</th><th style="width:160px">Pipeline</th><th class="${sortClass('has_active_deal')}" data-sort="has_active_deal" style="width:150px">Active deal</th><th style="width:140px">Deal #</th><th style="width:120px">Short VIN</th></tr></thead>`;
     bodyHTML = `<tbody>` + paged.slice.map(c=>{
       const pipeline=c.has_active_deal?`<span class="small">—</span>`:`<span class="pill"><span class="dot"></span>${escapeHTML(c.lead_stage||"Lead")}</span>`;
-      return `<tr class="${selectedKey===c.id?"selected":""}" data-key="${c.id}"><td class="mono">${c.id}</td><td>${escapeHTML(c.name)}</td><td class="mono">${c.dl_number}</td><td class="mono">${c.tlc_number}</td><td>${money(c.insurance_annual_rate)} <span class="small">/yr</span></td><td>${tierPill(c.rate_tier)}</td><td>${pipeline}</td><td>${dealPill(c.has_active_deal)}</td><td class="mono">${c.deal_number?c.deal_number:"<span class='small'>—</span>"}</td><td class="mono">${c.vin?c.vin:"<span class='small'>—</span>"}</td></tr>`;
+      const cShortVin = c.vin && DB.index.vehiclesByVIN[c.vin] ? (DB.index.vehiclesByVIN[c.vin].short_vin||"") : "";
+      return `<tr class="${selectedKey===c.id?"selected":""}" data-key="${c.id}"><td class="mono">${c.id}</td><td>${escapeHTML(c.name)}</td><td class="mono">${c.dl_number}</td><td class="mono">${c.tlc_number}</td><td>${money(c.insurance_annual_rate)} <span class="small">/yr</span></td><td>${tierPill(c.rate_tier)}</td><td>${pipeline}</td><td>${dealPill(c.has_active_deal)}</td><td class="mono">${c.deal_number?c.deal_number:"<span class='small'>—</span>"}</td><td class="mono">${cShortVin||"<span class='small'>—</span>"}</td></tr>`;
     }).join("") + `</tbody>`;
     table.innerHTML = headers + bodyHTML; footerFor(paged.total,"customers",paged.totalPages); wireSortHeaders();
     table.querySelectorAll("tbody tr").forEach(tr=>{ tr.addEventListener("click", ()=>{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });
   } else if(view==="vehicles"){
     wrap.classList.remove("matrixWrap");
     rows = filterVehicles(DB.vehicles); rows = sortRows(rows, sortCol, sortDir); paged = paginate(rows);
-    headers = `<thead><tr><th class="${sortClass('id')}" data-sort="id" style="width:84px">ID</th><th class="${sortClass('type_make_model')}" data-sort="type_make_model" style="min-width:220px">Vehicle</th><th style="width:220px">VIN</th><th style="width:120px">Plate</th><th class="${sortClass('has_active_deal')}" data-sort="has_active_deal" style="width:140px">Deal</th><th class="${sortClass('deal_end_date')}" data-sort="deal_end_date" style="width:140px">Ends</th><th class="${sortClass('vehicle_location')}" data-sort="vehicle_location" style="width:140px">Location</th><th class="${sortClass('insurance_daily_rate')}" data-sort="insurance_daily_rate" style="width:190px">Insurance daily</th><th class="${sortClass('insurance_annual_rate')}" data-sort="insurance_annual_rate" style="width:110px">Tier</th></tr></thead>`;
+    headers = `<thead><tr><th class="${sortClass('id')}" data-sort="id" style="width:84px">ID</th><th class="${sortClass('type_make_model')}" data-sort="type_make_model" style="min-width:220px">Vehicle</th><th style="width:120px">Short VIN</th><th style="width:120px">Plate</th><th class="${sortClass('has_active_deal')}" data-sort="has_active_deal" style="width:140px">Deal</th><th class="${sortClass('deal_end_date')}" data-sort="deal_end_date" style="width:140px">Ends</th><th class="${sortClass('vehicle_location')}" data-sort="vehicle_location" style="width:140px">Location</th><th class="${sortClass('insurance_daily_rate')}" data-sort="insurance_daily_rate" style="width:190px">Insurance daily</th><th class="${sortClass('insurance_annual_rate')}" data-sort="insurance_annual_rate" style="width:110px">Tier</th></tr></thead>`;
     bodyHTML = `<tbody>` + paged.slice.map(v=>{
       const dealStatus=v.has_active_deal?"active":(v.last_driver_customer_id?"ended":"none");
       const dealP=dealStatus==="active"?`<span class="pill good"><span class="dot"></span>Active</span>`:dealStatus==="ended"?`<span class="pill warn"><span class="dot"></span>Ended</span>`:`<span class="pill"><span class="dot"></span>None</span>`;
       const endsSoon=v.has_active_deal && dealEndsSoon(v.deal_end_date), endCell=v.deal_end_date?`<span class="mono">${v.deal_end_date}</span> ${endsSoon?`<span class="pill warn" style="margin-left:6px"><span class="dot"></span>≤30d</span>`:""}`:`<span class="small">—</span>`;
-      return `<tr class="${selectedKey===v.vin?"selected":""}" data-key="${v.vin}"><td class="mono">${v.id}</td><td>${escapeHTML(v.type_make_model)}</td><td class="mono">${v.vin}</td><td class="mono">${v.plate}</td><td>${dealP}</td><td>${endCell}</td><td>${escapeHTML(v.vehicle_location)}</td><td>${money2(v.insurance_daily_rate)} <span class="small">/day</span> ${ratePill(v.insurance_rate_source)}</td><td>${tierPill(rateTier(v.insurance_annual_rate))}</td></tr>`;
+      return `<tr class="${selectedKey===v.vin?"selected":""}" data-key="${v.vin}"><td class="mono">${v.id}</td><td>${escapeHTML(v.type_make_model)}</td><td class="mono">${v.short_vin||"—"}</td><td class="mono">${v.plate}</td><td>${dealP}</td><td>${endCell}</td><td>${escapeHTML(v.vehicle_location)}</td><td>${money2(v.insurance_daily_rate)} <span class="small">/day</span> ${ratePill(v.insurance_rate_source)}</td><td>${tierPill(rateTier(v.insurance_annual_rate))}</td></tr>`;
     }).join("") + `</tbody>`;
     table.innerHTML = headers + bodyHTML; footerFor(paged.total,"vehicles",paged.totalPages); wireSortHeaders();
     table.querySelectorAll("tbody tr").forEach(tr=>{ tr.addEventListener("click", ()=>{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });
@@ -1289,25 +1279,26 @@ function renderTable(){
     if(tierFilter!=="all") oppRows = oppRows.filter(o => (o.lead_tier || "High") === tierFilter);
     const q=getSearchTerm(); if(q) oppRows = oppRows.filter(o=> [o.kind,o.vehicle,o.vin,o.location,o.lead_name||"",o.lead_id||"",o.lead_tier||"",o.current_tier].join(" ").toLowerCase().includes(q));
     paged = paginate(oppRows);
-    headers = `<thead><tr><th class="${sortClass('kind')}" data-sort="kind" style="width:160px">Type</th><th class="${sortClass('vehicle')}" data-sort="vehicle">Vehicle</th><th style="width:220px">VIN</th><th class="${sortClass('deal_end')}" data-sort="deal_end" style="width:140px">Ends</th><th class="${sortClass('current_daily')}" data-sort="current_daily" style="width:130px">Current /day</th><th style="width:110px">Current tier</th><th style="width:160px">Suggested lead</th><th style="width:100px">Lead tier</th><th class="${sortClass('savings_daily')}" data-sort="savings_daily" style="width:140px">Est. save /day</th></tr></thead>`;
+    headers = `<thead><tr><th class="${sortClass('kind')}" data-sort="kind" style="width:160px">Type</th><th class="${sortClass('vehicle')}" data-sort="vehicle">Vehicle</th><th style="width:120px">Short VIN</th><th class="${sortClass('deal_end')}" data-sort="deal_end" style="width:140px">Ends</th><th class="${sortClass('current_daily')}" data-sort="current_daily" style="width:130px">Current /day</th><th style="width:110px">Current tier</th><th style="width:160px">Suggested lead</th><th style="width:100px">Lead tier</th><th class="${sortClass('savings_daily')}" data-sort="savings_daily" style="width:140px">Est. save /day</th></tr></thead>`;
     bodyHTML = `<tbody>` + paged.slice.map(o=>{
       const typeP = o.kind==="Vacant" ? `<span class="pill bad"><span class="dot"></span>Vacant</span>` : o.kind.startsWith("Expiring") ? `<span class="pill warn"><span class="dot"></span>Expiring</span>` : `<span class="pill"><span class="dot"></span>High-tier</span>`;
       const endCell = o.deal_end ? `<span class="mono">${o.deal_end}</span>` : `<span class="small">—</span>`;
       const leadName = o.lead_name ? escapeHTML(o.lead_name) : "<span class='small'>No low/med lead left</span>", leadTier = o.lead_tier ? tierPill(o.lead_tier) : "<span class='small'>—</span>";
       const saveDay = (o.savings_daily!=null) ? money2(o.savings_daily) : "<span class='small'>—</span>";
-      return `<tr class="${selectedKey===o.vin?"selected":""}" data-key="${o.vin}"><td>${typeP}</td><td>${escapeHTML(o.vehicle)}<div class="small">${escapeHTML(o.location)}</div></td><td class="mono">${o.vin}</td><td>${endCell}</td><td>${money2(o.current_daily)} <span class="small">/day</span></td><td>${tierPill(o.current_tier)}</td><td>${leadName}<div class="small mono">${o.lead_id || ""}</div></td><td>${leadTier}</td><td>${saveDay}</td></tr>`;
+      return `<tr class="${selectedKey===o.vin?"selected":""}" data-key="${o.vin}"><td>${typeP}</td><td>${escapeHTML(o.vehicle)}<div class="small">${escapeHTML(o.location)}</div></td><td class="mono">${o.short_vin||"—"}</td><td>${endCell}</td><td>${money2(o.current_daily)} <span class="small">/day</span></td><td>${tierPill(o.current_tier)}</td><td>${leadName}<div class="small mono">${o.lead_id || ""}</div></td><td>${leadTier}</td><td>${saveDay}</td></tr>`;
     }).join("") + `</tbody>`;
     table.innerHTML = headers + bodyHTML; footerFor(paged.total,"opportunities",paged.totalPages); wireSortHeaders();
     table.querySelectorAll("tbody tr").forEach(tr=>{ tr.addEventListener("click", ()=>{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });
   } else {
-    // Daily Spend Matrix — shows current snapshot rate across selected date range
+    // Daily Spend Matrix — shows data only for snapshot dates in the DB
     wrap.classList.add("matrixWrap");
-    const range = dailyRange || getDefaultDailyRange(), dates = listDatesInclusive(range.start, range.end);
+    const snapshotDates = allSnapshots.map(s=>s.upload_date).sort();
+    const dates = snapshotDates.length > 0 ? snapshotDates : [dateISO(today0())];
     rows = filterVehicles(DB.vehicles);
-    const q=getSearchTerm(); if(q) rows = rows.filter(v=> [v.vin,v.type_make_model,v.plate,v.deal_number||"",v.vehicle_location].join(" ").toLowerCase().includes(q));
+    const q=getSearchTerm(); if(q) rows = rows.filter(v=> [v.vin,v.short_vin||"",v.type_make_model,v.plate,v.deal_number||"",v.vehicle_location].join(" ").toLowerCase().includes(q));
     paged = paginate(rows);
-    const dateHeaders = dates.map(d=>`<th class="mono" style="width: 110px">${d.slice(5,7)}-${d.slice(8,10)}</th>`).join("");
-    headers = `<thead><tr><th style="width: 220px">Vehicle</th><th style="width: 220px">VIN</th><th style="width: 110px">Tier</th>${dateHeaders}</tr></thead>`;
+    const dateHeaders = dates.map(d=>`<th class="mono" style="width: 110px">${d}</th>`).join("");
+    headers = `<thead><tr><th style="width: 220px">Vehicle</th><th style="width: 120px">Short VIN</th><th style="width: 110px">Tier</th>${dateHeaders}</tr></thead>`;
     bodyHTML = `<tbody>` + paged.slice.map(v=>{
       const t = rateTier(v.insurance_annual_rate);
       const driverId = v.current_driver_customer_id || v.last_driver_customer_id || null;
@@ -1318,7 +1309,7 @@ function renderTable(){
       const rowCells = dates.map(dt=>{
         return `<td><div class="cell ${cls}"><div class="p">${money2(daily)}</div><div class="dl">${escapeHTML(fmtShortDL(dl))}</div></div></td>`;
       }).join("");
-      return `<tr class="${selectedKey===v.vin?"selected":""}" data-key="${v.vin}"><td>${escapeHTML(v.type_make_model)}<div class="small">${escapeHTML(v.vehicle_location)}</div></td><td class="mono">${v.vin}</td><td>${tierPill(t)}</td>${rowCells}</tr>`;
+      return `<tr class="${selectedKey===v.vin?"selected":""}" data-key="${v.vin}"><td>${escapeHTML(v.type_make_model)}<div class="small">${escapeHTML(v.vehicle_location)}</div></td><td class="mono">${v.short_vin||"—"}</td><td>${tierPill(t)}</td>${rowCells}</tr>`;
     }).join("") + `</tbody>`;
     table.innerHTML = headers + bodyHTML; footerFor(paged.total, "vehicles", paged.totalPages);
     table.querySelectorAll("tbody tr").forEach(tr=>{ tr.addEventListener("click", ()=>{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });
@@ -1329,7 +1320,7 @@ function renderTable(){
 function renderDetail(){
   const pane=el("detail");
   if(!selectedKey){
-    pane.innerHTML = `<div class="card"><h2>Details</h2><div class="muted">Click a row to inspect the record.</div><div class="divider"></div><div class="small">Use <b>Opportunities</b> to match low-rate leads to vacant/expiring vehicles and see estimated savings. <b>Daily Spend</b> shows the current snapshot rate across the selected date range.</div></div>`;
+    pane.innerHTML = `<div class="card"><h2>Details</h2><div class="muted">Click a row to inspect the record.</div><div class="divider"></div><div class="small">Use <b>Opportunities</b> to match low-rate leads to vacant/expiring vehicles and see estimated savings. <b>Daily Spend</b> shows rates from uploaded snapshots.</div></div>`;
     return;
   }
   
@@ -1345,9 +1336,9 @@ function renderDetail(){
         <div class="k">Pipeline stage</div><div class="v">${c.has_active_deal ? "—" : escapeHTML(c.lead_stage||"Lead")}</div>
         <div class="k">Active deal</div><div class="v">${dealPill(c.has_active_deal)}</div>
         <div class="k">Deal #</div><div class="v mono">${c.deal_number || "—"}</div>
-        <div class="k">VIN</div><div class="v mono">${c.vin || "—"}</div>
+        <div class="k">Short VIN</div><div class="v mono">${vehicle ? (vehicle.short_vin||"—") : "—"}</div>
       </div>
-      ${vehicle ? `<div class="divider"></div><div class="small">Linked vehicle</div><div style="margin-top:8px"><span class="linkish" id="jumpVehicle">${escapeHTML(vehicle.type_make_model)}</span><div class="muted mono" style="margin-top:4px">${vehicle.vin}</div></div>` : `<div class="divider"></div><div class="small">No linked vehicle. Match this lead to a vacant or expiring vehicle to realize savings.</div>`}
+      ${vehicle ? `<div class="divider"></div><div class="small">Linked vehicle</div><div style="margin-top:8px"><span class="linkish" id="jumpVehicle">${escapeHTML(vehicle.type_make_model)}</span><div class="muted mono" style="margin-top:4px">${vehicle.short_vin||vehicle.vin}</div></div>` : `<div class="divider"></div><div class="small">No linked vehicle. Match this lead to a vacant or expiring vehicle to realize savings.</div>`}
     </div>`;
     const jump=document.getElementById("jumpVehicle");
     if(jump) jump.addEventListener("click", ()=>{ view="vehicles"; setActiveTab(); selectedKey=vehicle.vin; page=1; renderTierStrip(); renderTable(); renderDetail(); });
@@ -1364,7 +1355,7 @@ function renderDetail(){
     const options = [`<option value="">Select lead to simulate match…</option>`].concat(candidates.map(c=>`<option value="${c.id}">${escapeHTML(c.name)} (${c.id}) • ${c.rate_tier} • ${money2(c.insurance_daily_rate)}/day</option>`)).join("");
 
     pane.innerHTML = `<div class="card">
-      <h2>${escapeHTML(v.type_make_model)}</h2><div class="muted">VIN <span class="mono">${v.vin}</span> • Tier ${tierPill(rateTier(v.insurance_annual_rate))}</div>
+      <h2>${escapeHTML(v.type_make_model)}</h2><div class="muted">Short VIN <span class="mono">${v.short_vin||"—"}</span> • Tier ${tierPill(rateTier(v.insurance_annual_rate))}</div>
       <div class="kv">
         <div class="k">Insurance daily</div><div class="v">${money2(v.insurance_daily_rate)} / day ${ratePill(v.insurance_rate_source)}</div>
         <div class="k">Deal status</div><div class="v">${dealStatus}${v.deal_status_raw&&v.deal_status_raw!==dealStatus?" <span class='small'>("+escapeHTML(v.deal_status_raw)+")</span>":""}</div>
@@ -1499,8 +1490,6 @@ async function init(){
   el("btnExpand").addEventListener("click", toggleExpand);
   el("expandBackdrop").addEventListener("click", toggleExpand);
   el("btnExport").addEventListener("click", exportJSON);
-  el("rangePreset").addEventListener("change", ()=>{ const preset=el("rangePreset").value; if(preset==="custom") return; dailyRange = computeRangeFromPreset(preset); setDailyControlsFromRange(dailyRange); page=1; selectedKey=null; if(view==="daily"){ renderTable(); renderDetail(); } });
-  el("btnApplyRange").addEventListener("click", ()=>{ dailyRange = computeRangeFromPreset(el("rangePreset").value); page=1; selectedKey=null; if(view==="daily"){ renderTable(); renderDetail(); toast(`Applied range ${dailyRange.start} → ${dailyRange.end}`); } });
   el("btnExportCSV").addEventListener("click", exportDailyCSV);
 
   // Snapshot selector
