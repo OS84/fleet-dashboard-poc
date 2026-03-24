@@ -218,6 +218,23 @@ function getAllDailyKpis() {
   return getDb().prepare("SELECT * FROM daily_kpis ORDER BY upload_date").all();
 }
 
+// Get vehicle daily rates for all snapshots in a date range
+// Returns { date -> { vin -> { daily_rate, annual_rate, rate_source, driver_dl, short_vin } } }
+function getVehicleRatesByDate(startDate, endDate) {
+  const d = getDb();
+  const rows = d.prepare(`
+    SELECT s.upload_date, v.vehicle_id, v.vin, v.short_vin, v.type_make_model,
+           v.insurance_daily_rate, v.insurance_annual_rate, v.insurance_rate_source,
+           v.current_driver_customer_id, v.last_driver_customer_id, v.vehicle_location,
+           v.has_active_deal
+    FROM vehicles v
+    JOIN snapshots s ON s.id = v.snapshot_id
+    WHERE s.upload_date BETWEEN ? AND ?
+    ORDER BY s.upload_date, v.vehicle_id
+  `).all(startDate, endDate);
+  return rows.map(r => ({ ...r, has_active_deal: !!r.has_active_deal }));
+}
+
 // Settings
 function getSetting(key, defaultVal) {
   const row = getDb().prepare("SELECT value FROM settings WHERE key = ?").get(key);
@@ -231,5 +248,5 @@ function setSetting(key, value) {
 module.exports = {
   getDb, saveSnapshot, getSnapshots, getLatestSnapshot,
   getCustomers, getVehicles, getDailyKpis, getAllDailyKpis,
-  getSetting, setSetting,
+  getVehicleRatesByDate, getSetting, setSetting,
 };

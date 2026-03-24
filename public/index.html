@@ -328,7 +328,15 @@
           <option value="all">Location: All</option>
         </select>
         <div class="matrixActions" id="dailyControls" style="display:none">
-          <span class="small" style="color:var(--muted)">Showing data for uploaded snapshot dates only</span>
+          <select id="rangePreset" style="min-width: 190px">
+            <option value="all">Range: All snapshots</option>
+            <option value="last_month">Range: Last 30 days</option>
+            <option value="mtd">Range: Month to date</option>
+            <option value="custom">Range: Custom</option>
+          </select>
+          <input type="date" id="rangeStart" />
+          <input type="date" id="rangeEnd" />
+          <button class="btn secondary miniBtn" id="btnApplyRange">Apply</button>
           <button class="btn miniBtn" id="btnExportCSV">Export CSV</button>
         </div>
       </div>
@@ -1006,14 +1014,9 @@ function toast(msg){
 function computeSpend(){
   const vehicles=DB.vehicles;
   const dailySpendAll=vehicles.reduce((s,v)=>s+(v.insurance_daily_rate || (v.insurance_annual_rate/365)),0);
-  // Use earliest date from data instead of start-of-year
-  let earliest=null;
-  for(const c of DB.customers){ if(c.cust_deal_date){ const d=parseISO(c.cust_deal_date); if(!earliest||d<earliest) earliest=d; } }
-  for(const v of vehicles){ if(v.deal_start_date){ const d=parseISO(v.deal_start_date); if(!earliest||d<earliest) earliest=d; } }
-  const dataStart = earliest || startOfYear();
-  const daysFromStart=Math.max(1, Math.round((today0()-dataStart)/86400000)+1);
+  const annualSpend=dailySpendAll*365;
   const daysMTD=Math.max(1, Math.round((today0()-startOfMonth())/86400000)+1);
-  return {dailySpendAll, spentFromStart: dailySpendAll*daysFromStart, spentMTD: dailySpendAll*daysMTD, dataStartDate: dateISO(dataStart)};
+  return {dailySpendAll, annualSpend, spentMTD: dailySpendAll*daysMTD};
 }
 function computeMoneyOnFloor(){
   const vehicles=DB.vehicles;
@@ -1025,7 +1028,7 @@ function computeMoneyOnFloor(){
 }
 function renderKPIs(){
   const customers=DB.customers, vehicles=DB.vehicles;
-  const {dailySpendAll, spentFromStart, spentMTD, dataStartDate}=computeSpend();
+  const {dailySpendAll, annualSpend, spentMTD}=computeSpend();
   const mof=computeMoneyOnFloor();
   const vacantVehicles = vehicles.filter(v=>!v.has_active_deal && !v.last_driver_customer_id).length;
   const expiring30 = vehicles.filter(v=>v.has_active_deal && dealEndsSoon(v.deal_end_date)).length;
@@ -1050,7 +1053,7 @@ function renderKPIs(){
   el("kpis").innerHTML = [
     {label:"Total vehicles", value: totalVehiclesCount.toLocaleString(), hint:`<span class="pill good" style="font-size:11px"><span class="dot"></span>Active: <b>${activeVehicles}</b></span> <span class="pill warn" style="font-size:11px"><span class="dot"></span>No deal: <b>${noActiveVehicles}</b></span><div class="kpiBar"><div class="seg good" style="width:${vActivePct}%"></div><div class="seg muted" style="width:${100-vActivePct}%"></div></div>`, trendKey:"total_vehicles"},
     {label:"Total customers", value: totalCustomersCount.toLocaleString(), hint:`<span class="pill good" style="font-size:11px"><span class="dot"></span>Active: <b>${activeCustomers}</b></span> <span class="pill warn" style="font-size:11px"><span class="dot"></span>Leads: <b>${noActiveCustomers}</b></span><div class="kpiBar"><div class="seg good" style="width:${cActivePct}%"></div><div class="seg muted" style="width:${100-cActivePct}%"></div></div>`, trendKey:"total_customers"},
-    {label:"Insurance spend", value: money(Math.round(spentFromStart)), hint:`<div class="kpiRow"><div class="kpiMini"><span>Since ${dataStartDate}</span> <b>${money(Math.round(spentFromStart))}</b></div><div class="kpiMini"><span>MTD</span> <b>${money(Math.round(spentMTD))}</b></div><div class="kpiMini"><span>Daily avg</span> <b>${money(Math.round(dailySpendAll))}</b></div></div>`, trendKey:"daily_spend"},
+    {label:"Insurance spend (snapshot)", value: money(Math.round(dailySpendAll))+"/day", hint:`<div class="kpiRow"><div class="kpiMini"><span>Daily</span> <b>${money(Math.round(dailySpendAll))}</b></div><div class="kpiMini"><span>MTD</span> <b>${money(Math.round(spentMTD))}</b></div><div class="kpiMini"><span>Annual</span> <b>${money(Math.round(annualSpend))}</b></div></div>`, trendKey:"daily_spend"},
     {label:"Money on the floor (daily)", value: money(Math.round(mof.totalAvoidableDaily)), hint:`Vacant burn: <strong>${money(Math.round(mof.vacantDaily))}</strong> • High-tier premium: <strong>${money(Math.round(mof.highPremiumDaily))}</strong>`, trendKey:"money_on_floor"},
     {label:"Insurance efficiency score", value: `${efficiency} / 100`, hint:`Vacant: <strong>${vacantVehicles}</strong> • Expiring ≤30d: <strong>${expiring30}</strong> • High tier: <strong>${highTierVehicles}</strong>`, trendKey:"efficiency_score"},
     {label:"Pipeline & tiers", value: `${leads.toLocaleString()} leads`, hint:`All tiers: Low ${tierCounts.Low} • Med ${tierCounts.Med} • High ${tierCounts.High}<br/>Lead tiers: Low ${leadTierCounts.Low} • Med ${leadTierCounts.Med} • High ${leadTierCounts.High}`, trendKey:"leads_count"}
@@ -1170,34 +1173,70 @@ function renderOppHeader(){
 
 // ---------- Daily Spend Config ----------
 function getDefaultDailyRange(){
-  const end=today0();
-  // Use earliest date from the data (deal dates, lease start dates) if available
-  if(DB){
-    let earliest=null;
-    for(const c of DB.customers){ if(c.cust_deal_date){ const d=parseISO(c.cust_deal_date); if(!earliest||d<earliest) earliest=d; } }
-    for(const v of DB.vehicles){ if(v.deal_start_date){ const d=parseISO(v.deal_start_date); if(!earliest||d<earliest) earliest=d; } }
-    if(earliest && earliest<end) return {start: dateISO(earliest), end: dateISO(end)};
-  }
-  const start=addDays(end, -29); return {start: dateISO(start), end: dateISO(end)};
+  // Default to range covering all snapshot dates
+  const dates = allSnapshots.map(s=>s.upload_date).sort();
+  if(dates.length>0) return {start: dates[0], end: dates[dates.length-1]};
+  const end=today0(), start=addDays(end, -29);
+  return {start: dateISO(start), end: dateISO(end)};
 }
-function setDailyControlsFromRange(range){ /* no-op: daily tab now uses snapshot dates */ }
-function listDatesInclusive(startISO,endISO){ const out=[]; let d=parseISO(startISO); const end=parseISO(endISO); while(d<=end){ out.push(dateISO(d)); d=addDays(d,1); } return out; }
+function setDailyControlsFromRange(range){ el("rangeStart").value = range.start; el("rangeEnd").value = range.end; }
+function computeRangeFromPreset(preset){
+  if(preset==="all"){
+    const dates = allSnapshots.map(s=>s.upload_date).sort();
+    if(dates.length>0) return {start: dates[0], end: dates[dates.length-1]};
+    return getDefaultDailyRange();
+  }
+  const end=today0();
+  if(preset==="mtd"){ const start=startOfMonth(); return {start: dateISO(start), end: dateISO(end)}; }
+  if(preset==="last_month"){ const start=addDays(end, -29); return {start: dateISO(start), end: dateISO(end)}; }
+  const s=el("rangeStart").value, e=el("rangeEnd").value; if(!s || !e) return getDefaultDailyRange(); return {start: s, end: e};
+}
+
+// Cache for per-snapshot vehicle rates loaded from server
+let dailyRatesCache = null; // { start, end, rows }
+
+async function apiLoadVehicleRates(start, end){
+  const r = await fetch(`/api/vehicle-rates?start=${start}&end=${end}`);
+  const rows = await r.json();
+  dailyRatesCache = { start, end, rows };
+  return rows;
+}
+
+function getDailySnapshotDates(){
+  const range = dailyRange || getDefaultDailyRange();
+  return allSnapshots.map(s=>s.upload_date).filter(d=> d>=range.start && d<=range.end).sort();
+}
+
 function exportDailyCSV(){
-  const snapshotDates = allSnapshots.map(s=>s.upload_date).sort();
-  const dates = snapshotDates.length > 0 ? snapshotDates : [dateISO(today0())];
+  const dates = getDailySnapshotDates();
+  if(!dates.length){ toast("No snapshots in selected range."); return; }
+  if(!dailyRatesCache || !dailyRatesCache.rows.length){ toast("No rate data loaded. View the Daily Spend tab first."); return; }
+  const ratesByDateVin = {};
+  for(const r of dailyRatesCache.rows){
+    if(!ratesByDateVin[r.upload_date]) ratesByDateVin[r.upload_date]={};
+    ratesByDateVin[r.upload_date][r.vin]=r;
+  }
+  const lines=[["short_vin","vehicle","date","daily_rate","annual_rate","rate_source"].join(",")];
   let vehicles = filterVehicles(DB.vehicles);
   const q=getSearchTerm(); if(q) vehicles = vehicles.filter(v=> [v.vin,v.short_vin||"",v.type_make_model,v.plate,v.deal_number||"",v.vehicle_location].join(" ").toLowerCase().includes(q));
-  const lines=[["short_vin","vehicle","date","daily_rate","annual_rate","driver_dl","driver_customer_id","rate_source"].join(",")];
   for(const v of vehicles){
-    const driverId = v.current_driver_customer_id || v.last_driver_customer_id || "";
-    const driver = driverId ? DB.index.customersById[driverId] : null;
-    const dl = driver ? (driver.dl_number || "") : "";
     for(const dt of dates){
-      lines.push([`"${v.short_vin||""}"`, `"${v.type_make_model.replace(/"/g,'""')}"`, dt, (v.insurance_daily_rate||0).toFixed(2), Math.round(v.insurance_annual_rate||0), `"${dl}"`, `"${driverId}"`, `"${v.insurance_rate_source||""}"`].join(","));
+      const r = ratesByDateVin[dt]?.[v.vin];
+      const daily = r ? r.insurance_daily_rate : null;
+      if(daily==null) continue;
+      lines.push([`"${v.short_vin||""}"`, `"${v.type_make_model.replace(/"/g,'""')}"`, dt, daily.toFixed(2), Math.round(r.insurance_annual_rate||0), `"${r.insurance_rate_source||""}"`].join(","));
     }
   }
   const first=dates[0]||"", last=dates[dates.length-1]||"";
   const blob=new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`daily_spend_${first}_to_${last}.csv`; a.click(); URL.revokeObjectURL(a.href); toast("Exported daily spend CSV.");
+}
+
+async function loadDailyRatesAndRender(){
+  const range = dailyRange || getDefaultDailyRange();
+  if(serverMode){
+    try{ await apiLoadVehicleRates(range.start, range.end); }catch(e){ console.warn("Failed to load vehicle rates:", e); }
+  }
+  renderTable();
 }
 
 function footerFor(total,label,totalPages){
@@ -1290,10 +1329,21 @@ function renderTable(){
     table.innerHTML = headers + bodyHTML; footerFor(paged.total,"opportunities",paged.totalPages); wireSortHeaders();
     table.querySelectorAll("tbody tr").forEach(tr=>{ tr.addEventListener("click", ()=>{ selectedKey=tr.getAttribute("data-key"); renderTable(); renderDetail(); }); });
   } else {
-    // Daily Spend Matrix — shows data only for snapshot dates in the DB
+    // Daily Spend Matrix — shows actual per-snapshot rates from uploaded data
     wrap.classList.add("matrixWrap");
-    const snapshotDates = allSnapshots.map(s=>s.upload_date).sort();
-    const dates = snapshotDates.length > 0 ? snapshotDates : [dateISO(today0())];
+    const dates = getDailySnapshotDates();
+    if(!dates.length){
+      table.innerHTML = `<div style="padding:30px;text-align:center;color:var(--muted)">No snapshots in the selected date range. Upload CSVs or adjust the range.</div>`;
+      footerFor(0,"vehicles",1); break;
+    }
+    // Build lookup: date -> vin -> rate row
+    const ratesByDateVin = {};
+    if(dailyRatesCache){
+      for(const r of dailyRatesCache.rows){
+        if(!ratesByDateVin[r.upload_date]) ratesByDateVin[r.upload_date]={};
+        ratesByDateVin[r.upload_date][r.vin]=r;
+      }
+    }
     rows = filterVehicles(DB.vehicles);
     const q=getSearchTerm(); if(q) rows = rows.filter(v=> [v.vin,v.short_vin||"",v.type_make_model,v.plate,v.deal_number||"",v.vehicle_location].join(" ").toLowerCase().includes(q));
     paged = paginate(rows);
@@ -1301,13 +1351,12 @@ function renderTable(){
     headers = `<thead><tr><th style="width: 220px">Vehicle</th><th style="width: 120px">Short VIN</th><th style="width: 110px">Tier</th>${dateHeaders}</tr></thead>`;
     bodyHTML = `<tbody>` + paged.slice.map(v=>{
       const t = rateTier(v.insurance_annual_rate);
-      const driverId = v.current_driver_customer_id || v.last_driver_customer_id || null;
-      const driver = driverId ? DB.index.customersById[driverId] : null;
-      const dl = driver ? driver.dl_number : null;
-      const daily = v.insurance_daily_rate;
-      const cls = (v.insurance_rate_source==="base") ? "vacant" : (t==="High" ? "high" : "");
       const rowCells = dates.map(dt=>{
-        return `<td><div class="cell ${cls}"><div class="p">${money2(daily)}</div><div class="dl">${escapeHTML(fmtShortDL(dl))}</div></div></td>`;
+        const r = ratesByDateVin[dt]?.[v.vin];
+        if(!r) return `<td><div class="cell"><div class="p" style="color:var(--muted)">—</div></div></td>`;
+        const rt = rateTier(r.insurance_annual_rate);
+        const cls = (r.insurance_rate_source==="base") ? "vacant" : (rt==="High" ? "high" : "");
+        return `<td><div class="cell ${cls}"><div class="p">${money2(r.insurance_daily_rate)}</div></div></td>`;
       }).join("");
       return `<tr class="${selectedKey===v.vin?"selected":""}" data-key="${v.vin}"><td>${escapeHTML(v.type_make_model)}<div class="small">${escapeHTML(v.vehicle_location)}</div></td><td class="mono">${v.short_vin||"—"}</td><td>${tierPill(t)}</td>${rowCells}</tr>`;
     }).join("") + `</tbody>`;
@@ -1482,7 +1531,7 @@ async function init(){
   el("tabCustomers").addEventListener("click", ()=>{view="customers"; page=1; selectedKey=null; sortCol=null; sortDir=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
   el("tabVehicles").addEventListener("click", ()=>{view="vehicles"; page=1; selectedKey=null; sortCol=null; sortDir=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
   el("tabOpp").addEventListener("click", ()=>{view="opportunities"; page=1; selectedKey=null; sortCol=null; sortDir=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
-  el("tabDaily").addEventListener("click", ()=>{view="daily"; page=1; selectedKey=null; sortCol=null; sortDir=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
+  el("tabDaily").addEventListener("click", async ()=>{view="daily"; page=1; selectedKey=null; sortCol=null; sortDir=null; setActiveTab(); renderTierStrip(); await loadDailyRatesAndRender(); renderDetail();});
   ["search","filterDeal","filterLocation"].forEach(id=>{ el(id).addEventListener("input", ()=>{page=1; selectedKey=null; renderTable(); renderDetail();}); el(id).addEventListener("change", ()=>{page=1; selectedKey=null; renderTable(); renderDetail();}); });
   el("prevPage").addEventListener("click", ()=>{page--; renderTable();}); el("nextPage").addEventListener("click", ()=>{page++; renderTable();});
   el("pageSizeSelect").addEventListener("change", function(){ pageSize=parseInt(this.value)||40; page=1; renderTable(); });
@@ -1490,6 +1539,8 @@ async function init(){
   el("btnExpand").addEventListener("click", toggleExpand);
   el("expandBackdrop").addEventListener("click", toggleExpand);
   el("btnExport").addEventListener("click", exportJSON);
+  el("rangePreset").addEventListener("change", async ()=>{ const preset=el("rangePreset").value; if(preset==="custom") return; dailyRange = computeRangeFromPreset(preset); setDailyControlsFromRange(dailyRange); page=1; selectedKey=null; if(view==="daily"){ await loadDailyRatesAndRender(); renderDetail(); } });
+  el("btnApplyRange").addEventListener("click", async ()=>{ const preset=el("rangePreset").value; if(preset==="custom"){ const s=el("rangeStart").value, e=el("rangeEnd").value; if(s&&e) dailyRange={start:s,end:e}; } else { dailyRange = computeRangeFromPreset(preset); } setDailyControlsFromRange(dailyRange); page=1; selectedKey=null; if(view==="daily"){ await loadDailyRatesAndRender(); renderDetail(); toast(`Applied range ${dailyRange.start} → ${dailyRange.end}`); } });
   el("btnExportCSV").addEventListener("click", exportDailyCSV);
 
   // Snapshot selector

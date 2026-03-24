@@ -109,6 +109,15 @@ app.get("/api/daily-kpis", (req, res) => {
   }
 });
 
+// Get vehicle rates across snapshots for daily spend matrix
+app.get("/api/vehicle-rates", (req, res) => {
+  const { start, end } = req.query;
+  if (!start || !end) {
+    return res.status(400).json({ error: "start and end query params required" });
+  }
+  res.json(db.getVehicleRatesByDate(start, end));
+});
+
 // Settings
 app.get("/api/settings/:key", (req, res) => {
   const val = db.getSetting(req.params.key, null);
