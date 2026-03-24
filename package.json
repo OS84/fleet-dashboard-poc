@@ -2,7 +2,7 @@
   "name": "fleet-dashboard-poc",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js"
@@ -10,6 +10,9 @@
   "repository": {
     "type": "git",
     "url": "http://local_proxy@127.0.0.1:41037/git/OS84/fleet-dashboard-poc"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "keywords": [],
   "author": "",

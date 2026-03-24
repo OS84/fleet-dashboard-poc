@@ -75,7 +75,9 @@ function initSchema() {
       color TEXT,
       plate_status TEXT,
       plate_expiration TEXT,
-      deal_status_raw TEXT
+      deal_status_raw TEXT,
+      tlc_number TEXT,
+      short_vin TEXT
     );
 
     -- Aggregated daily KPIs (computed on upload for fast querying)
@@ -151,15 +153,15 @@ function saveSnapshot(uploadDate, baseRate, customers, vehicles, kpis) {
        has_active_deal, deal_number, deal_start_date, deal_end_date, sales_channel, vehicle_location,
        insurance_annual_rate, insurance_daily_rate, insurance_rate_source,
        current_driver_customer_id, last_driver_customer_id, last_driver_annual_rate,
-       status_changed_at, color, plate_status, plate_expiration, deal_status_raw)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+       status_changed_at, color, plate_status, plate_expiration, deal_status_raw, tlc_number, short_vin)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
     for (const v of vehicles) {
       vehStmt.run(snapId, v.id, v.type_make_model, v.vin, v.plate, v.diamond, v.diamond_expiration_date,
         v.has_active_deal ? 1 : 0, v.deal_number, v.deal_start_date, v.deal_end_date,
         v.sales_channel, v.vehicle_location, v.insurance_annual_rate, v.insurance_daily_rate,
         v.insurance_rate_source, v.current_driver_customer_id, v.last_driver_customer_id,
         v.last_driver_annual_rate, v.status_changed_at, v.color, v.plate_status, v.plate_expiration,
-        v.deal_status_raw);
+        v.deal_status_raw, v.tlc_number || null, v.short_vin || null);
     }
 
     // Insert daily KPIs
@@ -216,6 +218,23 @@ function getAllDailyKpis() {
   return getDb().prepare("SELECT * FROM daily_kpis ORDER BY upload_date").all();
 }
 
+// Get vehicle daily rates for all snapshots in a date range
+// Returns { date -> { vin -> { daily_rate, annual_rate, rate_source, driver_dl, short_vin } } }
+function getVehicleRatesByDate(startDate, endDate) {
+  const d = getDb();
+  const rows = d.prepare(`
+    SELECT s.upload_date, v.vehicle_id, v.vin, v.short_vin, v.type_make_model,
+           v.insurance_daily_rate, v.insurance_annual_rate, v.insurance_rate_source,
+           v.current_driver_customer_id, v.last_driver_customer_id, v.vehicle_location,
+           v.has_active_deal
+    FROM vehicles v
+    JOIN snapshots s ON s.id = v.snapshot_id
+    WHERE s.upload_date BETWEEN ? AND ?
+    ORDER BY s.upload_date, v.vehicle_id
+  `).all(startDate, endDate);
+  return rows.map(r => ({ ...r, has_active_deal: !!r.has_active_deal }));
+}
+
 // Settings
 function getSetting(key, defaultVal) {
   const row = getDb().prepare("SELECT value FROM settings WHERE key = ?").get(key);
@@ -229,5 +248,5 @@ function setSetting(key, value) {
 module.exports = {
   getDb, saveSnapshot, getSnapshots, getLatestSnapshot,
   getCustomers, getVehicles, getDailyKpis, getAllDailyKpis,
-  getSetting, setSetting,
+  getVehicleRatesByDate, getSetting, setSetting,
 };
