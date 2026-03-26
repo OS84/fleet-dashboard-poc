@@ -1340,7 +1340,7 @@ function renderTable(){
     const dates = getDailySnapshotDates();
     if(!dates.length){
       table.innerHTML = `<div style="padding:30px;text-align:center;color:var(--muted)">No snapshots in the selected date range. Upload CSVs or adjust the range.</div>`;
-      footerFor(0,"vehicles",1); break;
+      footerFor(0,"vehicles",1); return;
     }
     // Build lookup: date -> vin -> rate row
     const ratesByDateVin = {};
