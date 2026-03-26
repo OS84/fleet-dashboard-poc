@@ -682,49 +682,55 @@ let dailyKpiHistory = [];
 
 async function apiCheck(){
   try{
-    const r = await fetch("/api/snapshots", {method:"GET"});
+    const r = await fetchWithTimeout("/api/snapshots", {method:"GET"}, 5000);
     if(r.ok){ serverMode=true; return true; }
-  }catch(e){}
+  }catch(e){ console.warn("API check failed:", e); }
   return false;
 }
 
+function fetchWithTimeout(url, opts={}, ms=8000){
+  const controller = new AbortController();
+  const timeout = setTimeout(()=>controller.abort(), ms);
+  return fetch(url, {...opts, signal:controller.signal}).finally(()=>clearTimeout(timeout));
+}
+
 async function apiLoadSnapshots(){
-  const r = await fetch("/api/snapshots");
+  const r = await fetchWithTimeout("/api/snapshots");
   allSnapshots = await r.json();
   return allSnapshots;
 }
 
 async function apiLoadSnapshot(id){
-  const r = await fetch(`/api/snapshots/${id}`);
+  const r = await fetchWithTimeout(`/api/snapshots/${id}`);
   return r.json();
 }
 
 async function apiLoadLatest(){
-  const r = await fetch("/api/snapshots/latest");
+  const r = await fetchWithTimeout("/api/snapshots/latest");
   return r.json();
 }
 
 async function apiSaveSnapshot(uploadDate, baseRate, customers, vehicles, kpis){
-  const r = await fetch("/api/snapshots", {
+  const r = await fetchWithTimeout("/api/snapshots", {
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({upload_date: uploadDate, base_rate: baseRate, customers, vehicles, kpis})
-  });
+  }, 30000);
   return r.json();
 }
 
 async function apiDeleteSnapshot(id){
-  await fetch(`/api/snapshots/${id}`, {method:"DELETE"});
+  await fetchWithTimeout(`/api/snapshots/${id}`, {method:"DELETE"});
 }
 
 async function apiLoadDailyKpis(){
-  const r = await fetch("/api/daily-kpis");
+  const r = await fetchWithTimeout("/api/daily-kpis");
   dailyKpiHistory = await r.json();
   return dailyKpiHistory;
 }
 
 async function apiSaveBaseRate(val){
-  await fetch("/api/settings/base_rate_annual", {
+  await fetchWithTimeout("/api/settings/base_rate_annual", {
     method:"PUT", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({value: String(val)})
   });
@@ -732,7 +738,7 @@ async function apiSaveBaseRate(val){
 
 async function apiLoadBaseRate(){
   try{
-    const r = await fetch("/api/settings/base_rate_annual");
+    const r = await fetchWithTimeout("/api/settings/base_rate_annual");
     const d = await r.json();
     return d.value ? parseFloat(d.value) : 8200;
   }catch(e){ return 8200; }
@@ -1196,7 +1202,7 @@ function computeRangeFromPreset(preset){
 let dailyRatesCache = null; // { start, end, rows }
 
 async function apiLoadVehicleRates(start, end){
-  const r = await fetch(`/api/vehicle-rates?start=${start}&end=${end}`);
+  const r = await fetchWithTimeout(`/api/vehicle-rates?start=${start}&end=${end}`);
   const rows = await r.json();
   dailyRatesCache = { start, end, rows };
   return rows;

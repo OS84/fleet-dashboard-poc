@@ -7,6 +7,13 @@ const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 app.use(express.json());
+// Prevent browser caching of HTML so deploys take effect immediately
+app.use((req, res, next) => {
+  if (req.path === "/" || req.path.endsWith(".html")) {
+    res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+  }
+  next();
+});
 app.use(express.static(path.join(__dirname, "public")));
 
 // --- API Routes ---
