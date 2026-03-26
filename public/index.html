@@ -1469,65 +1469,10 @@ function rebuildFromStorage(){
 }
 
 async function init(){
-  // Set default upload date to today
+  // --- Wire up ALL event listeners FIRST (synchronous) so buttons always work ---
   el("uploadDate").value = new Date().toISOString().slice(0,10);
 
-  // Check if server is available
-  const hasServer = await apiCheck();
-
-  // Load base rate
-  if(serverMode){
-    BASE_RATE_ANNUAL = await apiLoadBaseRate();
-  } else {
-    BASE_RATE_ANNUAL = loadBaseRate();
-  }
-  el("baseRateInput").value=BASE_RATE_ANNUAL;
-
-  // Wire base rate input
-  el("baseRateInput").addEventListener("change", async function(){
-    const v=parseFloat(this.value);
-    if(isNaN(v)||v<0){ this.value=BASE_RATE_ANNUAL; return; }
-    BASE_RATE_ANNUAL=v;
-    saveBaseRate(v);
-    if(serverMode) await apiSaveBaseRate(v);
-    if(DB){ rebuildFromStorage(); toast("Base rate updated to $"+v.toLocaleString()+"/yr"); }
-  });
-
-  // Try to load from server first, then localStorage
-  if(serverMode){
-    try{
-      await apiLoadSnapshots();
-      await apiLoadDailyKpis();
-      if(allSnapshots.length > 0){
-        const latest = await apiLoadLatest();
-        if(latest.snapshot){
-          currentSnapshotId = latest.snapshot.id;
-          DB = rebuildDBFromSnapshot(latest);
-        }
-      }
-    }catch(e){
-      console.warn("Server load failed, falling back to localStorage:", e);
-    }
-  }
-
-  if(!DB){
-    const stored=loadCSVsFromStorage();
-    if(stored){
-      try{
-        const custRows=parseCSV(stored.custText);
-        const vehRows=parseCSV(stored.vehText);
-        DB=buildDB(custRows,vehRows);
-      }catch(e){
-        console.warn("Failed to load stored CSVs:",e);
-      }
-    }
-  }
-
-  if(DB){
-    OPPS=buildOpportunities(); dailyRange=getDefaultDailyRange(); setDailyControlsFromRange(dailyRange);
-  }
-
-  // Wire up tabs
+  // Tabs
   el("tabCustomers").addEventListener("click", ()=>{view="customers"; page=1; selectedKey=null; sortCol=null; sortDir=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
   el("tabVehicles").addEventListener("click", ()=>{view="vehicles"; page=1; selectedKey=null; sortCol=null; sortDir=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
   el("tabOpp").addEventListener("click", ()=>{view="opportunities"; page=1; selectedKey=null; sortCol=null; sortDir=null; setActiveTab(); renderTierStrip(); renderTable(); renderDetail();});
@@ -1542,8 +1487,6 @@ async function init(){
   el("rangePreset").addEventListener("change", async ()=>{ const preset=el("rangePreset").value; if(preset==="custom") return; dailyRange = computeRangeFromPreset(preset); setDailyControlsFromRange(dailyRange); page=1; selectedKey=null; if(view==="daily"){ await loadDailyRatesAndRender(); renderDetail(); } });
   el("btnApplyRange").addEventListener("click", async ()=>{ const preset=el("rangePreset").value; if(preset==="custom"){ const s=el("rangeStart").value, e=el("rangeEnd").value; if(s&&e) dailyRange={start:s,end:e}; } else { dailyRange = computeRangeFromPreset(preset); } setDailyControlsFromRange(dailyRange); page=1; selectedKey=null; if(view==="daily"){ await loadDailyRatesAndRender(); renderDetail(); toast(`Applied range ${dailyRange.start} → ${dailyRange.end}`); } });
   el("btnExportCSV").addEventListener("click", exportDailyCSV);
-
-  // Snapshot selector
   el("snapshotSelect").addEventListener("change", async function(){
     const id=parseInt(this.value);
     if(!isNaN(id)) await loadSnapshotById(id);
@@ -1553,20 +1496,73 @@ async function init(){
     if(s.style.display==="block"){ s.style.display="none"; }
     else{ renderHistoryPanel(); }
   });
+  el("baseRateInput").addEventListener("change", async function(){
+    const v=parseFloat(this.value);
+    if(isNaN(v)||v<0){ this.value=BASE_RATE_ANNUAL; return; }
+    BASE_RATE_ANNUAL=v;
+    saveBaseRate(v);
+    if(serverMode) await apiSaveBaseRate(v);
+    if(DB){ rebuildFromStorage(); toast("Base rate updated to $"+v.toLocaleString()+"/yr"); }
+  });
 
   setupUploadUI();
   setActiveTab();
 
-  if(DB){
-    refreshAll();
-    if(serverMode){ renderSnapshotBar(); }
-  } else {
-    // No data yet — show upload modal automatically
+  // --- Now do async data loading (errors here won't break the UI) ---
+  try{
+    const hasServer = await apiCheck();
+
+    if(serverMode){
+      BASE_RATE_ANNUAL = await apiLoadBaseRate();
+    } else {
+      BASE_RATE_ANNUAL = loadBaseRate();
+    }
+    el("baseRateInput").value=BASE_RATE_ANNUAL;
+
+    if(serverMode){
+      try{
+        await apiLoadSnapshots();
+        await apiLoadDailyKpis();
+        if(allSnapshots.length > 0){
+          const latest = await apiLoadLatest();
+          if(latest.snapshot){
+            currentSnapshotId = latest.snapshot.id;
+            DB = rebuildDBFromSnapshot(latest);
+          }
+        }
+      }catch(e){
+        console.warn("Server load failed, falling back to localStorage:", e);
+      }
+    }
+
+    if(!DB){
+      const stored=loadCSVsFromStorage();
+      if(stored){
+        try{
+          const custRows=parseCSV(stored.custText);
+          const vehRows=parseCSV(stored.vehText);
+          DB=buildDB(custRows,vehRows);
+        }catch(e){
+          console.warn("Failed to load stored CSVs:",e);
+        }
+      }
+    }
+
+    if(DB){
+      OPPS=buildOpportunities(); dailyRange=getDefaultDailyRange(); setDailyControlsFromRange(dailyRange);
+      refreshAll();
+      if(serverMode){ renderSnapshotBar(); }
+    } else {
+      el("uploadBackdrop").style.display="flex";
+      el("kpis").innerHTML=`<div class="card" style="grid-column:1/-1;text-align:center;padding:30px"><h2>Welcome</h2><div class="muted">Upload your Customers and Vehicles CSVs to get started.${serverMode?" Data will be saved to the server and shared with your team.":""}</div></div>`;
+    }
+  }catch(e){
+    console.error("Init data loading error:", e);
     el("uploadBackdrop").style.display="flex";
-    el("kpis").innerHTML=`<div class="card" style="grid-column:1/-1;text-align:center;padding:30px"><h2>Welcome</h2><div class="muted">Upload your Customers and Vehicles CSVs to get started.${serverMode?" Data will be saved to the server and shared with your team.":""}</div></div>`;
+    el("kpis").innerHTML=`<div class="card" style="grid-column:1/-1;text-align:center;padding:30px"><h2>Welcome</h2><div class="muted">Upload your Customers and Vehicles CSVs to get started.</div></div>`;
   }
 }
-init();
+init().catch(e=>console.error("Unhandled init error:", e));
 </script>
 </body>
 </html>
